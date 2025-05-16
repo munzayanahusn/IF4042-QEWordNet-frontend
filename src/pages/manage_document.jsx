@@ -17,8 +17,9 @@ import {
   Th,
   Td,
   TableContainer,
+  Divider,
 } from '@chakra-ui/react';
-import { ArrowUpIcon } from '@chakra-ui/icons';
+import { ArrowUpIcon, ChevronLeftIcon } from '@chakra-ui/icons';
 
 export default function ManageDocument() {
   const [selectedDoc, setSelectedDoc] = useState('');
@@ -52,7 +53,21 @@ export default function ManageDocument() {
   }));
 
   return (
-    <Box w="100%" px={16} pt={8} bg="white" fontFamily="'Poppins', sans-serif">
+    <Box w="100%" px={16} bg="white" fontFamily="'Poppins', sans-serif">
+      <Flex mb={6} ml={-4}>
+        <Button 
+          leftIcon={<ChevronLeftIcon />} 
+          variant="ghost" 
+          color="black"
+          fontSize="sm"
+          fontWeight="normal"
+          _hover={{ bg: 'transparent', textDecoration: 'underline' }}
+          onClick={() => console.log('Back to search')}
+          px={2}
+        >
+          Back to Search
+        </Button>
+      </Flex>
       <Flex mb={8} align="center" gap={4}>
         <Text fontWeight="bold" fontSize="lg" minW="100px">Document</Text>
         <Flex flex="1" gap={3} align="center">
@@ -89,6 +104,11 @@ export default function ManageDocument() {
           </Button>
         </Flex>
       </Flex>
+
+      {/* Horizontal Line Below Document Input */}
+      <Divider borderColor="gray.200" mb={6} />
+
+      {/* Title & Toggles */}
       <Flex justify="space-between" align="center" mb={3}>
         <Heading fontSize="lg" fontWeight="bold">Inverted File</Heading>
         <HStack spacing={8}>
@@ -102,8 +122,10 @@ export default function ManageDocument() {
           </HStack>
         </HStack>
       </Flex>
+
+      {/* Table */}
       <Box borderRadius="md" overflow="hidden">
-        <TableContainer maxH="calc(100vh - 150px)" overflowY="auto" overflowX="auto">
+        <TableContainer maxH="calc(100vh - 330px)" overflowY="auto" overflowX="auto">
           <Table variant="simple" size="sm" tableLayout="fixed" w="100%">
             <colgroup>
               <col width="14.28%" />
