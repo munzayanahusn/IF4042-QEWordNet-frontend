@@ -1,15 +1,34 @@
-import { Box, Button, Text, VStack } from '@chakra-ui/react'
+import { Box } from "@chakra-ui/react";
+import { useState } from "react";
+import Navbar from "./components/main_navbar";
+import SubNavbar from "./components/sub_navbar";
+import InteractiveMain from "./pages/interactive_main";
+import ManageDocument from "./pages/manage_document";
 
 
-function App() {
+export default function App() {
+  const [page, setPage] = useState("interactive");
+  const [isMainNavbar, setMainNavbar] = useState(true);
+
+  const renderPage = () => {
+    switch (page) {
+      case "batch":
+        return <ManageDocument />;
+      case "manage":
+        return <ManageDocument />;
+      default:
+        return <InteractiveMain setMainNavbar={setMainNavbar} />;
+    }
+  };
+
   return (
-    <Box p={8}>
-      <VStack spacing={4}>
-        <Text fontSize="3xl">Halo dari Chakra UI!</Text>
-        <Button colorScheme="teal">Klik saya</Button>
-      </VStack>
+    <Box minH="100vh" bg="white" py={6} px={8}>
+      {isMainNavbar ? (
+        <Navbar current={page} onChange={setPage} />
+      ) : (
+        <SubNavbar current={page} onChange={setPage} />
+      )}
+      {renderPage()}
     </Box>
-  )
+  );
 }
-
-export default App
