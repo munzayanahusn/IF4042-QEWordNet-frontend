@@ -3,6 +3,7 @@ import { useState } from "react";
 import Navbar from "./components/main_navbar";
 import SubNavbar from "./components/sub_navbar";
 import InteractiveMain from "./pages/interactive_main";
+import BatchMain from "./pages/batch_main";
 import ManageDocument from "./pages/manage_document";
 
 
@@ -13,7 +14,7 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case "batch":
-        return <ManageDocument />;
+        return <BatchMain setMainNavbar={setMainNavbar} />;
       case "manage":
         return <ManageDocument />;
       default:

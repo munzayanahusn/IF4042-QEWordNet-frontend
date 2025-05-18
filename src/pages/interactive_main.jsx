@@ -20,6 +20,7 @@ import { FaCloudUploadAlt } from 'react-icons/fa';
 import { useState } from "react";
 import logo1 from "../assets/logo1.svg";
 
+
 export default function InteractiveMain({ setMainNavbar }) {
   const [stemming, setStemming] = useState(true);
   const [stopWord, setStopWord] = useState(true);
@@ -226,38 +227,6 @@ export default function InteractiveMain({ setMainNavbar }) {
           >
             Upload
           </Button>
-
-          {/* <HStack mt={10} justify="space-between" align="start" width="100%" maxW="600px">
-            <Text fontSize="lg" fontWeight="medium">
-              Document
-            </Text>
-            <VStack justify="end" align="end" spacing={4}>
-              <Select
-                placeholder="No document selected"
-                w="250px"
-                h="50px"
-                bg="gray.200"
-                borderRadius="12px"
-                boxShadow="md"
-              >
-                <option value="doc1.txt">doc1.txt</option>
-                <option value="doc2.txt">doc2.txt</option>
-              </Select> */}
-
-              {/* <Button
-                leftIcon={<FaCloudUploadAlt />}
-                h="50px"
-                px={6}
-                bg="orange.400"
-                color="white"
-                borderRadius="12px"
-                boxShadow="md"
-                _hover={{ bg: "orange.500" }}
-              >
-                Upload
-              </Button>
-            </VStack>
-          </HStack> */}
         </VStack>
       </Flex>
     </Box>
