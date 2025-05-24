@@ -12,6 +12,7 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  calc,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronLeftIcon } from "@chakra-ui/icons";
 import { getDocumentById } from "../services/interactive";
@@ -247,12 +248,16 @@ export default function InteractiveDetail({ result, setPage }) {
           </Text>
         </Box>
 
-        <Box flex="1" pr={4} maxW={800}>
-          <Box overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-            <Text fontWeight="bold" fontSize="md" color="blue.600" isTruncated>
-              {doc.title || `Document ID: ${item.doc_id}`}
-            </Text>
-          </Box>
+        <Box flex="1" pr={4} minW={0}>
+          <Text 
+            fontWeight="bold" 
+            fontSize="md" 
+            color="blue.600" 
+            isTruncated
+            title={doc.title || `Document ID: ${item.doc_id}`}
+          >
+            {doc.title || `Document ID: ${item.doc_id}`}
+          </Text>
           {doc.author && (
             <Text fontSize="sm" fontStyle="italic" color="gray.500" mb={1} isTruncated>
               by {doc.author}
