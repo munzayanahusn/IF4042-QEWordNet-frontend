@@ -17,6 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { FaUpload } from "react-icons/fa";
 import logo1 from "../assets/logo1.svg";
+import { Search2Icon } from "@chakra-ui/icons";
 
 
 const UploadCard = ({ title, onFileChange, id }) => {
@@ -66,7 +67,7 @@ export default function BatchMain({ setMainNavbar }) {
   const [relevantFile, setRelevantFile] = useState(null);
   const [settingsFile, setSettingsFile] = useState(null);
   const [outputFileName, setOutputFileName] = useState("");
-  const [documentIDs, setDocumentIDs] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [selectedDC, setSelectedDC] = useState("");
   const toast = useToast();
 
@@ -75,8 +76,10 @@ export default function BatchMain({ setMainNavbar }) {
       const response = await getDCID();
       if (response.status === 200) {
         console.log('Document IDs fetched successfully:', response.data);
-        setDocumentIDs(response.data.map(item => item.id));
-      } else {
+        setDocuments(response.data.map(item => ({
+          id: item.id,
+          filename: item.dc_path.split(/[/\\]/).pop().split('_').pop()
+        })));      } else {
         console.error('Error fetching document IDs:', response.statusText);
       }
     }
@@ -170,10 +173,10 @@ export default function BatchMain({ setMainNavbar }) {
   }, []);
 
   return (
-    <VStack spacing={8} p={8}>
+    <VStack spacing={8} p={6}>
       <Heading fontSize="4xl" color="teal.900">
         <Flex direction="column" align="center" gap={6}>
-          <Image src={logo1} alt="Logo" mb={5}/>
+          <Image src={logo1} alt="Logo" height={"44"} mb={5}/>
         </Flex>
       </Heading>
 
@@ -188,9 +191,9 @@ export default function BatchMain({ setMainNavbar }) {
           value={selectedDC}
           onChange={(e) => setSelectedDC(e.target.value)}
         >
-          {documentIDs.map((item) => (
-            <option key={item} value={item}>
-              {`Document collection ${item}`}
+          {documents.map((item) => (
+            <option key={item.id} value={item.id}>
+              {`ID ${item.id}: ${item.filename}`}
             </option>
           ))}
         </Select>
@@ -211,14 +214,17 @@ export default function BatchMain({ setMainNavbar }) {
         </VStack>
       </Flex>
 
-      <Flex w="100%" maxW="700px" gap={4} mt={8}>
+      <Flex w="100%" maxW="700px" gap={4} justify="center" align="center">
+        <Text w="220px">Output File Name</Text>
+
         <Input
           placeholder="Input file name"
           value={outputFileName}
           onChange={(e) => setOutputFileName(e.target.value)}
         />
-        <Button onClick={handleSaveClick} bg="#fbe2c3" shadow="md">
-          Save File
+        <Button gap={2} onClick={handleSaveClick} bg="#fbe2c3" shadow="md" p={"1"} w="200px" _hover={{ bg: '#f9d6a0' }}>
+          <Search2Icon />
+          Search
         </Button>
       </Flex>
     </VStack>

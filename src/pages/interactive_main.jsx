@@ -46,7 +46,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
   const [docTF, setDocTF] = useState("raw");
   const [docIDF, setDocIDF] = useState(true);
   const [docNorm, setDocNorm] = useState(true);
-  const [documentIDs, setDocumentIDs] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [selectedDC, setSelectedDC] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
@@ -56,7 +56,10 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
       const response = await getDCID();
       if (response.status === 200) {
         console.log('Document IDs fetched successfully:', response.data);
-        setDocumentIDs(response.data.map(item => item.id));
+        setDocuments(response.data.map(item => ({
+          id: item.id,
+          filename: item.dc_path.split(/[/\\]/).pop().split('_').pop()
+        })));
       } else {
         console.error('Error fetching document IDs:', response.statusText);
       }
@@ -122,10 +125,10 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
 
 
   return (
-    <Box minH="100vh" bg="white" px={8} mt={20} mb={12}>
+    <Box p={6} mb={10}>
       {/* Logo & Title */}
       <Flex direction="column" align="center" gap={6}>
-        <Image src={logo1} alt="Logo" mb={5}/>
+        <Image src={logo1} alt="Logo" height={"44"} mb={5}/>
 
         {/* Search Box */}
         <InputGroup w="2xl">
@@ -376,9 +379,9 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
               value={selectedDC}
               onChange={(e) => setSelectedDC(e.target.value)}
             >
-              {documentIDs.map((item) => (
-                <option key={item} value={item}>
-                  {`Document collection ${item}`}
+              {documents.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {`ID ${item.id}: ${item.filename}`}
                 </option>
               ))}
             </Select>
