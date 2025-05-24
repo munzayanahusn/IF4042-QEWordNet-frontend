@@ -8,6 +8,7 @@ import {
   useToast, 
   Switch, 
   HStack,
+  VStack,
   Table, 
   Thead, 
   Tbody, 
@@ -544,16 +545,23 @@ export default function ManageDocument() {
               ))
             ) : (
               <Tr>
-                <Td colSpan={6} textAlign="center" py={6} color="gray.500" fontStyle="italic">
-                  {stemming && stopWord ? (
-                    <>Stemming and Stopword are active<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
-                  ) : stemming ? (
-                    <>Stemming is active<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
-                  ) : stopWord ? (
-                    <>Stopword is active<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
-                  ) : (
-                    <>Stemming and Stopword are inactive<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
-                  )}
+                <Td colSpan={6} textAlign="center" py={6} color="gray.500">
+                  <VStack spacing={2}>
+                    <Text as="i">
+                      {stemming && stopWord
+                        ? 'Stemming and stopword removal are active'
+                        : stemming
+                        ? 'Stemming is active'
+                        : stopWord
+                        ? 'Stopword removal is active'
+                        : 'Stemming and stopword removal are inactive'}
+                    </Text>
+                    <Text as="i" fontWeight="bold">
+                      {stemming || stopWord
+                        ? `No valid terms remain in Document "${selectedDoc}" after preprocessing.`
+                        : `No valid terms remain in Document ${selectedDoc}`}
+                    </Text>
+                  </VStack>
                 </Td>
               </Tr>
             )
