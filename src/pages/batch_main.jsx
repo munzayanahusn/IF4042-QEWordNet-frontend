@@ -16,7 +16,7 @@ import {
   Image
 } from "@chakra-ui/react";
 import { FaUpload } from "react-icons/fa";
-import logo1 from "../assets/logo1.svg";
+import logo1 from "../assets/logo1-new.svg";
 import { Search2Icon } from "@chakra-ui/icons";
 
 
@@ -176,7 +176,7 @@ export default function BatchMain({ setMainNavbar }) {
     <VStack spacing={8} p={6}>
       <Heading fontSize="4xl" color="teal.900">
         <Flex direction="column" align="center" gap={6}>
-          <Image src={logo1} alt="Logo" height={"44"} mb={5}/>
+          <Image src={logo1} alt="Logo" height={"56"} mb={5}/>
         </Flex>
       </Heading>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getDCID, searchDocument } from "../services/interactive"
-import logo1 from "../assets/logo1.svg";
+import logo1 from "../assets/logo1-new.svg";
 import { Search2Icon } from "@chakra-ui/icons";
 import {
   Image,
@@ -128,7 +128,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
     <Box p={6} mb={10}>
       {/* Logo & Title */}
       <Flex direction="column" align="center" gap={6}>
-        <Image src={logo1} alt="Logo" height={"44"} mb={5}/>
+        <Image src={logo1} alt="Logo" height={"56"} mb={5}/>
 
         {/* Search Box */}
         <InputGroup w="2xl">

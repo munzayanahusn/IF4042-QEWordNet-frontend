@@ -1,5 +1,5 @@
 import { Image, Flex, Button } from "@chakra-ui/react";
-import logo2 from "../assets/logo2.svg";
+import logo2 from "../assets/logo2-new.svg";
 
 
 export default function SubNavbar({ current, onChange }) {
@@ -20,7 +20,7 @@ export default function SubNavbar({ current, onChange }) {
     >
       {/* Logo */}
       <Flex align="center" gap={2}>
-        <Image src={logo2} alt="Logo" height={16} />
+        <Image src={logo2} alt="Logo" height={14} />
       </Flex>
 
       {/* Navigation Tabs */}
