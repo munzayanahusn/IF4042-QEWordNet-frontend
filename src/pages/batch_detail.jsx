@@ -6,12 +6,15 @@ import {
     Link, 
     Table, Thead, Tbody, Tr, Th, Td,
     Alert,
-    Spinner
+    Spinner,
+    GridItem,
+    useBreakpointValue
 } from "@chakra-ui/react";
 import {
     useState,
     useEffect,
-    useRef
+    useRef,
+    
 } from 'react';
 import { ChevronLeftIcon } from "@chakra-ui/icons";
 import axios from "axios";
@@ -54,7 +57,103 @@ const MetricCard = ({title, value}) => (
         </Flex>
     </Box>
 );
+const WideTable = ({query1, query2}) => (
+    <Table>
+        <Thead>
+            <Tr>
+                <Th 
+                    minWidth="3vw" 
+                    fontSize="md"
+                    color="black"
+                    fontWeight="bold"
+                    >ID</Th>
+                <Th 
+                    width="40%"
+                    fontSize="md"
+                    color="black"
+                    fontWeight="bold"
+                    >InitialQuery</Th>
+                <Th 
+                    minWidth="3vw"
+                    fontSize="md"
+                    color="black"
+                    fontWeight="bold"
+                    border
+                    borderRight={"1px solid"}
+                    textAlign={"center"}
+                    >AP</Th>
+                    
+                    <Th 
+                    minWidth="3vw" 
+                    fontSize="md"
+                    color="black"
+                    fontWeight="bold"
+                    borderLeft={"1px solid"}
+                    >ID</Th>
+                <Th 
+                    width="40%"
+                    fontSize="md"
+                    color="black"
+                    fontWeight="bold"
+                    >Expanded Query</Th>
+                <Th 
+                    minWidth="3vw"
+                    fontSize="md"
+                    color="black"
+                    fontWeight="bold"
+                    border
+                    textAlign={"center"}
+                    >AP</Th>
+            </Tr>
+        </Thead>
+        <Tbody>
+            {query1.map((query,index)=>(
+                <Tr 
+               >
+                    <Td>{query.id}</Td>
+                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query.text}</Td>
+                    <Td borderRight={"1px solid"}>
+                        <Box 
+                        as="span"
+                        bg="rgba(244, 140, 6, 0.14)" // Use your color palette
+                        px={3}
+                        py={1}
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="gray.200"
+                        display="inline-block"
+                        minW="40px"
+                        textAlign="center"
+                        >
+                        {query.AP}
+                        </Box>
+                    </Td>
+                   
+                    <Td borderLeft={"1px solid"}>{query2[index].id}</Td>
+                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query2[index].text}</Td>
 
+                    <Td>
+                        <Box 
+                        as="span"
+                        bg="rgba(244, 140, 6, 0.14)" // Use your color palette
+                        px={3}
+                        py={1}
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="gray.200"
+                        display="inline-block"
+                        minW="40px"
+                        textAlign="center"
+                        alignSelf={"start"}
+                        >
+                        {query2[index].AP}
+                        </Box>
+                        </Td>
+                </Tr>
+            ))}
+        </Tbody>
+    </Table>
+)
 const QueryResultTable = ({title, queries}) => (
     <Table>
         <Thead>
@@ -76,7 +175,7 @@ const QueryResultTable = ({title, queries}) => (
                     fontSize="md"
                     color="black"
                     fontWeight="bold"
-                    border
+                    textAlign={"center"}
                     >AP</Th>
             </Tr>
         </Thead>
@@ -85,8 +184,21 @@ const QueryResultTable = ({title, queries}) => (
                 <Tr key={query.id} 
                >
                     <Td>{query.id}</Td>
-                    <Td whiteSpace={"normal"} wordBreak={"break-word"}>{query.text}</Td>
-                    <Td>{query.AP}</Td>
+                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query.text}</Td>
+                    <Td><Box 
+          as="span"
+          bg="rgba(244, 140, 6, 0.14)" // Use your color palette
+          px={3}
+          py={1}
+          borderRadius="md"
+          border="1px solid"
+          borderColor="gray.200"
+          display="inline-block"
+          minW="40px"
+          textAlign="center"
+        >
+          {query.AP}
+        </Box></Td>
                 </Tr>
             ))}
         </Tbody>
@@ -103,7 +215,7 @@ const BatchDetailPage = () => {
     const [expandedQueries, setExpandedQueries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
+    const isWideScreen = useBreakpointValue({ base: false, md: true });
 
     useEffect(() => {
         const fetchData = async () => {
@@ -149,6 +261,8 @@ const BatchDetailPage = () => {
                 <Text fontSize="xs">Back to Search</Text>
             </Link>
             {/* Content Container */}
+            
+            {!isWideScreen ? (
             <Flex
                 direction={{ base: "column", md: "row" }}
                 gap={6}
@@ -181,6 +295,42 @@ const BatchDetailPage = () => {
 
 
             </Flex>
+            ) : (
+                // Combined Table
+                <Grid
+                    templateColumns={{ base: "1fr", md: "1fr 1fr" }}
+                    gap={8}
+                    w="full"
+                    placeItems="center"
+                    >
+                    {/* First Row: Metric Cards - Positioned at edges */}
+                    <GridItem 
+                        w="100%" maxW="400px"             // Right padding/gap
+                    >
+                        <MetricCard 
+                        title="mAP Initial Query" 
+                        value={mapData.initial?.toFixed(2) || 'N/A'} 
+                        />
+                    </GridItem>
+
+                    <GridItem 
+                        w="100%" maxW="400px"
+                    >
+                        <MetricCard 
+                        title="mAP Expanded Query" 
+                        value={mapData.expanded?.toFixed(2) || 'N/A'} 
+                        />
+                    </GridItem>
+
+                    {/* Second Row: Full-width Table */}
+                    <GridItem 
+                        colSpan={{ base: 1, md: 3 }}  // Spans all columns on desktop
+                        mt={4}
+                    >
+                        <WideTable query1={initialQueries} query2={expandedQueries} />
+                    </GridItem>
+                    </Grid>
+            )}
           
         </Box>
     )
