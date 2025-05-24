@@ -30,7 +30,8 @@ import {
   ModalHeader, 
   ModalFooter, 
   ModalBody, 
-  ModalCloseButton
+  ModalCloseButton, 
+  Spinner
 } from '@chakra-ui/react';
 import { ArrowUpIcon, ChevronLeftIcon, SearchIcon } from '@chakra-ui/icons';
 import '@fontsource/poppins';
@@ -137,8 +138,8 @@ function CustomSelectWithSearch({ selectedDoc, setSelectedDoc, documents, isLoad
 export default function ManageDocument() {
   const [selectedDoc, setSelectedDoc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [stemming, setStemming] = useState(true);
-  const [stopWord, setStopWord] = useState(true);
+  const [stemming, setStemming] = useState(false);
+  const [stopWord, setStopWord] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('');
@@ -147,7 +148,13 @@ export default function ManageDocument() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [invertedFileData, setInvertedFileData] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const toast = useToast();
+
+  useEffect(() => {
+  setHasSearched(false);
+  setInvertedFileData([]);
+}, [selectedCollection, selectedDoc, stemming, stopWord]);
 
   useEffect(() => {
     fetchCollections()
@@ -176,6 +183,7 @@ export default function ManageDocument() {
         stopword: stopWord,
       });
       setInvertedFileData(data);
+      setHasSearched(true); 
     } catch (error) {
       toast({
         title: 'Error',
@@ -184,11 +192,11 @@ export default function ManageDocument() {
         duration: 3000,
         isClosable: true,
       });
+      setHasSearched(false);
     } finally {
       setIsSearching(false);
     }
   };
-
   useEffect(() => {
     if (selectedCollection) {
       setIsLoadingDocs(true);
@@ -510,28 +518,57 @@ export default function ManageDocument() {
             </Th>
           </Tr>
         </Thead>
-
         <Tbody>
-          {invertedFileData.length > 0 ? (
-            invertedFileData.map((row, i) => (
-              <Tr key={i}>
-                <Td>{row.term}</Td>
-                <Td>{row.tf_raw}</Td>
-                <Td>{row.tf_log}</Td>
-                <Td>{row.tf_binary}</Td>
-                <Td>{row.tf_augmented}</Td>
-                <Td>{row.idf}</Td>
+          {isSearching ? (
+            <Tr>
+              <Td colSpan={6} textAlign="center" py={6}>
+                <Flex direction="column" align="center" gap={2}>
+                  <Spinner size="lg" color="orange.400" />
+                  <Text color="gray.500" fontStyle="italic">
+                    Searching document "{selectedDoc}"...
+                  </Text>
+                </Flex>
+              </Td>
+            </Tr>
+          ) : hasSearched ? (
+            invertedFileData.length > 0 ? (
+              invertedFileData.map((row, i) => (
+                <Tr key={i}>
+                  <Td>{row.term}</Td>
+                  <Td>{row.tf_raw}</Td>
+                  <Td>{row.tf_log}</Td>
+                  <Td>{row.tf_binary}</Td>
+                  <Td>{row.tf_augmented}</Td>
+                  <Td>{row.idf}</Td>
+                </Tr>
+              ))
+            ) : (
+              <Tr>
+                <Td colSpan={6} textAlign="center" py={6} color="gray.500" fontStyle="italic">
+                  {stemming && stopWord ? (
+                    <>Stemming and Stopword are active<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
+                  ) : stemming ? (
+                    <>Stemming is active<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
+                  ) : stopWord ? (
+                    <>Stopword is active<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
+                  ) : (
+                    <>Stemming and Stopword are inactive<br /><Text as="span" fontWeight="bold">Document "{selectedDoc}" has no terms.</Text></>
+                  )}
+                </Td>
               </Tr>
-            ))
+            )
           ) : (
             <Tr>
               <Td colSpan={6} textAlign="center" py={6} color="gray.500" fontStyle="italic">
-                No data available. Please select and search a document.
+                {selectedCollection && selectedDoc ? (
+                  'Ready to search. Click the "Search" button to view results.'
+                ) : (
+                  'No data available. Please select and search a document.'
+                )}
               </Td>
             </Tr>
           )}
         </Tbody>
-
         </Table>
 
         </TableContainer>
