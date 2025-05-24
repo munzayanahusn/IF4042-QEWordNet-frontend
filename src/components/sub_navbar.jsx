@@ -1,4 +1,6 @@
-import { Box, Flex, Text, Button } from "@chakra-ui/react";
+import { Image, Flex, Button } from "@chakra-ui/react";
+import logo2 from "../assets/logo2.svg";
+
 
 export default function SubNavbar({ current, onChange }) {
   const tabItems = [
@@ -18,10 +20,7 @@ export default function SubNavbar({ current, onChange }) {
     >
       {/* Logo */}
       <Flex align="center" gap={2}>
-        <Box w={6} h={6} bg="cyan.400" transform="rotate(45deg)" />
-        <Text fontWeight="bold" fontSize="lg" color="gray.800">
-          STBI WORDNET
-        </Text>
+        <Image src={logo2} alt="Logo" height={16} />
       </Flex>
 
       {/* Navigation Tabs */}

@@ -2,7 +2,6 @@ import React, { useRef, useState } from "react";
 import {
   Box,
   Button,
-  Center,
   Flex,
   Heading,
   Icon,
@@ -10,6 +9,7 @@ import {
   Select,
   Text,
   VStack,
+  HStack,
   useToast,
   Image
 } from "@chakra-ui/react";
@@ -22,6 +22,8 @@ const UploadCard = ({ title, onFileChange }) => {
 
   return (
     <Box
+      as="label"
+      htmlFor="file-upload"
       border="2px dashed orange"
       w="250px"
       h="200px"
@@ -31,16 +33,21 @@ const UploadCard = ({ title, onFileChange }) => {
       justifyContent="center"
       bg="#fafefe"
       borderRadius="md"
+      cursor="pointer"
+      _hover={{ bg: '#fdf8f4' }}
     >
-      <Button
-        variant="ghost"
-        onClick={() => inputRef.current.click()}
-        leftIcon={<Icon as={FaUpload} color="orange.400" boxSize={6} />}
-      >
-        Upload Files
-      </Button>
-      <Text fontSize="sm">Supported formats: Txt</Text>
+      <HStack>
+        <Icon as={FaUpload} color="orange.400" boxSize={6} />
+        <Text fontWeight="medium" color="orange.500">
+          Upload Files
+        </Text>
+      </HStack>
+      <Text fontSize="sm" mt={2}>
+        Supported formats: Txt
+      </Text>
+
       <Input
+        id="file-upload"
         type="file"
         accept=".txt"
         display="none"
@@ -105,18 +112,10 @@ export default function BatchMain({ setMainNavbar }) {
         <Text w="100px">Document</Text>
         <Select
           flex={1}
-          placeholder={documentFile ? documentFile.name : "No document selected"}
+          placeholder={documentFile ? documentFile.name : "No document collection selected"}
           isReadOnly
-        />
-        <Button colorScheme="orange" leftIcon={<FaUpload />} onClick={handleUploadClick}>
-          Upload
-        </Button>
-        <Input
-          type="file"
-          accept=".txt"
-          display="none"
-          onChange={(e) => setDocumentFile(e.target.files[0])}
-          id="main-upload"
+          bg="#DCE2EE"
+          cursor="pointer"
         />
       </Flex>
 

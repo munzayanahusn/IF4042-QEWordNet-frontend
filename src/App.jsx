@@ -23,7 +23,7 @@ export default function App() {
   };
 
   return (
-    <Box minH="100vh" bg="white" py={6} px={8}>
+    <Box minH="100vh" bg="white" pb={6}>
       {isMainNavbar ? (
         <Navbar current={page} onChange={setPage} />
       ) : (

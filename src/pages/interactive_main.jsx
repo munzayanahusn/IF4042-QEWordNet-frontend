@@ -3,7 +3,6 @@ import {
   Box,
   Flex,
   Text,
-  Button,
   Input,
   InputGroup,
   InputRightElement,
@@ -16,15 +15,78 @@ import {
   HStack,
 } from "@chakra-ui/react";
 import { Search2Icon } from "@chakra-ui/icons";
-import { FaCloudUploadAlt } from 'react-icons/fa';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import logo1 from "../assets/logo1.svg";
-
+import { getDCID, searchDocument } from "../services/interactive"
 
 export default function InteractiveMain({ setMainNavbar }) {
-  const [stemming, setStemming] = useState(true);
-  const [stopWord, setStopWord] = useState(true);
-//   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [query, setQuery] = useState('');
+  const [stemming, setStemming] = useState(false);
+  const [stopWord, setStopWord] = useState(false);
+  const [synset, setSynset] = useState(["lemmas"]);
+  const [queryTF, setQueryTF] = useState("raw");
+  const [queryIDF, setQueryIDF] = useState(true);
+  const [queryNorm, setQueryNorm] = useState(true);
+  const [docTF, setDocTF] = useState("raw");
+  const [docIDF, setDocIDF] = useState(true);
+  const [docNorm, setDocNorm] = useState(true);
+  const [documentIDs, setDocumentIDs] = useState([]);
+  const [selectedDC, setSelectedDC] = useState("");
+
+  const fetchDocumentIDs = async () => {
+    try {
+      const response = await getDCID();
+      if (response.status === 200) {
+        console.log('Document IDs fetched successfully:', response.data);
+        setDocumentIDs(response.data.map(item => item.id));
+      } else {
+        console.error('Error fetching document IDs:', response.statusText);
+      }
+      // Handle the response data as needed
+    }
+    catch (error) {
+      console.error('Error fetching document IDs:', error);
+    }
+  };
+
+  const search = async () => {
+    try {
+      let data = {
+        dc_id: selectedDC,
+        query: query,
+        synset: synset,
+        stem: stemming,
+        stopword: stopWord,
+        query_tf: queryTF,
+        query_idf: queryIDF,
+        query_norm: queryNorm,
+        doc_tf: docTF,
+        doc_idf: docIDF,
+        doc_norm: docNorm
+      };
+      console.log("Search Data:", data);
+      const response = await searchDocument(data);
+      // Redirect to interactive_detail
+      setMainNavbar(false)
+      if (response.status === 200) {
+        console.log('Users fetched successfully:', response.data);
+      } else {
+        console.error('Error fetching users:', response.statusText);
+      }
+      // Handle the response data as needed
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchDocumentIDs();
+  }, []);
+  
+  useEffect(() => {
+    console.log("Document IDs:", documentIDs);
+  }, [documentIDs]);
 
   return (
     <Box minH="100vh" bg="white" px={8} mt={20} mb={12}>
@@ -35,22 +97,24 @@ export default function InteractiveMain({ setMainNavbar }) {
         {/* Search Box */}
         <InputGroup w="2xl">
           <Input
-              placeholder="Input query"
-              borderRadius="full"
-              bg="white"
-              boxShadow="sm"
+            placeholder="Input query"
+            borderRadius="full"
+            bg="white"
+            boxShadow="sm"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
           <InputRightElement>
-              <IconButton
+            <IconButton
               icon={<Search2Icon />}
               aria-label="Search"
               variant="ghost"
               size="sm"
               borderRadius="full"
-              _hover={{ bg: "gray.100" }}
-              _active={{ bg: "gray.200" }}
-              onClick={() => setMainNavbar(false)}
-              />
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              onClick={search}
+            />
           </InputRightElement>
         </InputGroup>
 
@@ -97,31 +161,34 @@ export default function InteractiveMain({ setMainNavbar }) {
               <Select
                 w="150px"
                 h="45px"
-                bg="orange.400"
+                bg="#F48C06"
                 color="white"
                 defaultValue="Raw-TF"
                 borderRadius="12px"
                 boxShadow="md"
+                cursor="pointer"
+                onChange={(e) => setQueryTF(e.target.value)}
               >
-                <option style={{ color: "black" }} value="Raw-TF">Raw-TF</option>
-                <option style={{ color: "black" }} value="Logarithmic-TF">Logarithmic-TF</option>
-                <option style={{ color: "black" }} value="Binary-TF">Binary-TF</option>
-                <option style={{ color: "black" }} value="Augmented-TF">Augmented-TF</option>
-
+                <option style={{ color: "black" }} value="raw">Raw-TF</option>
+                <option style={{ color: "black" }} value="log">Logarithmic-TF</option>
+                <option style={{ color: "black" }} value="binary">Binary-TF</option>
+                <option style={{ color: "black" }} value="augmented">Augmented-TF</option>
               </Select>
               <Select
                 w="150px"
                 h="45px"
-                bg="orange.400"
+                bg="#F48C06"
                 color="white"
                 defaultValue="Raw-TF"
                 borderRadius="12px"
                 boxShadow="md"
+                cursor="pointer"
+                onChange={(e) => setDocTF(e.target.value)}
               >
-                <option style={{ color: "black" }} value="Raw-TF">Raw-TF</option>
-                <option style={{ color: "black" }} value="Logarithmic-TF">Logarithmic-TF</option>
-                <option style={{ color: "black" }} value="Binary-TF">Binary-TF</option>
-                <option style={{ color: "black" }} value="Augmented-TF">Augmented-TF</option>
+                <option style={{ color: "black" }} value="raw">Raw-TF</option>
+                <option style={{ color: "black" }} value="log">Logarithmic-TF</option>
+                <option style={{ color: "black" }} value="binary">Binary-TF</option>
+                <option style={{ color: "black" }} value="augmented">Augmented-TF</option>
               </Select>
             </HStack>
           </Flex>
@@ -136,26 +203,30 @@ export default function InteractiveMain({ setMainNavbar }) {
               <Select
                 w="150px"
                 h="45px"
-                bg="orange.400"
+                bg="#F48C06"
                 color="white"
                 defaultValue="Yes"
                 borderRadius="12px"
                 boxShadow="md"
+                cursor="pointer"
+                onChange={(e) => setQueryIDF(e.target.value)}
               >
-                <option style={{ color: "black" }} value="Yes">Yes</option>
-                <option style={{ color: "black" }} value="No">No</option>
+                <option style={{ color: "black" }} value={true}>Yes</option>
+                <option style={{ color: "black" }} value={false}>No</option>
               </Select>
               <Select
                 w="150px"
                 h="45px"
-                bg="orange.400"
+                bg="#F48C06"
                 color="white"
                 defaultValue="Yes"
                 borderRadius="12px"
                 boxShadow="md"
+                cursor="pointer"
+                onChange={(e) => setDocIDF(e.target.value)}
               >
-                <option style={{ color: "black" }} value="Yes">Yes</option>
-                <option style={{ color: "black" }} value="No">No</option>
+                <option style={{ color: "black" }} value={true}>Yes</option>
+                <option style={{ color: "black" }} value={false}>No</option>
               </Select>
             </HStack>
           </Flex>
@@ -171,26 +242,30 @@ export default function InteractiveMain({ setMainNavbar }) {
               <Select
                 w="150px"
                 h="45px"
-                bg="orange.400"
+                bg="#F48C06"
                 color="white"
                 defaultValue="Yes"
                 borderRadius="12px"
                 boxShadow="md"
+                cursor="pointer"
+                onChange={(e) => setQueryNorm(e.target.value)}
               >
-                <option style={{ color: "black" }} value="Yes">Yes</option>
-                <option style={{ color: "black" }} value="No">No</option>
+                <option style={{ color: "black" }} value={true}>Yes</option>
+                <option style={{ color: "black" }} value={false}>No</option>
               </Select>
               <Select
                 w="150px"
                 h="45px"
-                bg="orange.400"
+                bg="#F48C06"
                 color="white"
                 defaultValue="Yes"
                 borderRadius="12px"
                 boxShadow="md"
+                cursor="pointer"
+                onChange={(e) => setDocNorm(e.target.value)}
               >
-                <option style={{ color: "black" }} value="Yes">Yes</option>
-                <option style={{ color: "black" }} value="No">No</option>
+                <option style={{ color: "black" }} value={true}>Yes</option>
+                <option style={{ color: "black" }} value={false}>No</option>
               </Select>
             </HStack>
           </Flex>
@@ -202,31 +277,23 @@ export default function InteractiveMain({ setMainNavbar }) {
               Document
             </Text>
             <Select
-                placeholder="No document selected"
-                w="250px"
-                h="50px"
-                bg="gray.200"
-                borderRadius="12px"
-                boxShadow="md"
-              >
-                <option value="doc1.txt">doc1.txt</option>
-                <option value="doc2.txt">doc2.txt</option>
-              </Select>
+              placeholder="No document selected"
+              w="310px"
+              h="50px"
+              bg="#DCE2EE"
+              borderRadius="12px"
+              boxShadow="md"
+              cursor="pointer"
+              value={selectedDC}
+              onChange={(e) => setSelectedDC(e.target.value)}
+            >
+              {documentIDs.map((item) => (
+                <option key={item} value={item}>
+                  {`Document collection ${item}`}
+                </option>
+              ))}
+            </Select>
           </Flex>
-
-          <Button
-            alignSelf={"flex-end"}
-            leftIcon={<FaCloudUploadAlt />}
-            h="50px"
-            px={6}
-            bg="orange.400"
-            color="white"
-            borderRadius="12px"
-            boxShadow="md"
-            _hover={{ bg: "orange.500" }}
-          >
-            Upload
-          </Button>
         </VStack>
       </Flex>
     </Box>

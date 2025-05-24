@@ -3,7 +3,7 @@ import { HStack, Button } from "@chakra-ui/react";
 
 export default function Navbar({ current, onChange }) {
   return (
-    <HStack justify="center" spacing={10} py={6}>
+    <HStack justify="center" spacing={16} pt={12} pb={6}>
       <Button
         onClick={() => onChange("interactive")}
         bg={current === "interactive" ? "#FDEDD4" : "transparent"}
