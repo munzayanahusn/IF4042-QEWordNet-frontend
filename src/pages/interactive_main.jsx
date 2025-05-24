@@ -401,7 +401,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              Choose a document collection first before searching.
+              {query === "" ? "Please input a query" : selectedDC === "" ? "Please select a document collection" : "An error occurred while searching"}
             </AlertDialogBody>
 
             <AlertDialogFooter>
