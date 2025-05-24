@@ -136,6 +136,11 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             boxShadow="sm"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                search();
+              }
+            }}
           />
           <InputRightElement>
             <IconButton
@@ -247,32 +252,32 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
                 h="45px"
                 bg="#F48C06"
                 color="white"
-                defaultValue="Raw-TF"
+                defaultValue="raw"
                 borderRadius="12px"
                 boxShadow="md"
                 cursor="pointer"
                 onChange={(e) => setQueryTF(e.target.value)}
               >
-                <option style={{ color: "black" }} value="raw">Raw-TF</option>
-                <option style={{ color: "black" }} value="log">Logarithmic-TF</option>
-                <option style={{ color: "black" }} value="binary">Binary-TF</option>
-                <option style={{ color: "black" }} value="augmented">Augmented-TF</option>
+                <option style={{ color: "black" }} value="raw">Raw</option>
+                <option style={{ color: "black" }} value="log">Logarithmic</option>
+                <option style={{ color: "black" }} value="binary">Binary</option>
+                <option style={{ color: "black" }} value="augmented">Augmented</option>
               </Select>
               <Select
                 w="150px"
                 h="45px"
                 bg="#F48C06"
                 color="white"
-                defaultValue="Raw-TF"
+                defaultValue="raw"
                 borderRadius="12px"
                 boxShadow="md"
                 cursor="pointer"
                 onChange={(e) => setDocTF(e.target.value)}
               >
-                <option style={{ color: "black" }} value="raw">Raw-TF</option>
-                <option style={{ color: "black" }} value="log">Logarithmic-TF</option>
-                <option style={{ color: "black" }} value="binary">Binary-TF</option>
-                <option style={{ color: "black" }} value="augmented">Augmented-TF</option>
+                <option style={{ color: "black" }} value="raw">Raw</option>
+                <option style={{ color: "black" }} value="log">Logarithmic</option>
+                <option style={{ color: "black" }} value="binary">Binary</option>
+                <option style={{ color: "black" }} value="augmented">Augmented</option>
               </Select>
             </HStack>
           </Flex>
@@ -354,7 +359,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             </HStack>
           </Flex>
 
-          {/* Upload Section */}
+          {/* Document Collection Selection */}
           <Flex gap={10} align="center" justify="space-between" width="100%" maxW="600px">
             {/* Left side text */}
             <Text fontSize="lg" fontWeight="medium">
