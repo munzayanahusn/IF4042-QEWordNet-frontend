@@ -1,4 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { searchDocumentBatch } from "../services/batch";
+import { getDCID } from "../services/interactive";
 import {
   Box,
   Button,
@@ -17,13 +19,13 @@ import { FaUpload } from "react-icons/fa";
 import logo1 from "../assets/logo1.svg";
 
 
-const UploadCard = ({ title, onFileChange }) => {
+const UploadCard = ({ title, onFileChange, id }) => {
   const inputRef = useRef();
 
   return (
     <Box
       as="label"
-      htmlFor="file-upload"
+      htmlFor={id}
       border="2px dashed orange"
       w="250px"
       h="200px"
@@ -47,9 +49,9 @@ const UploadCard = ({ title, onFileChange }) => {
       </Text>
 
       <Input
-        id="file-upload"
+        id={id}
         type="file"
-        accept=".txt"
+        accept=".txt, .text"
         display="none"
         ref={inputRef}
         onChange={onFileChange}
@@ -58,33 +60,32 @@ const UploadCard = ({ title, onFileChange }) => {
   );
 };
 
+
 export default function BatchMain({ setMainNavbar }) {
-  const [documentFile, setDocumentFile] = useState(null);
   const [queriesFile, setQueriesFile] = useState(null);
   const [relevantFile, setRelevantFile] = useState(null);
   const [settingsFile, setSettingsFile] = useState(null);
   const [outputFileName, setOutputFileName] = useState("");
+  const [documentIDs, setDocumentIDs] = useState([]);
+  const [selectedDC, setSelectedDC] = useState("");
   const toast = useToast();
 
-  const handleUploadClick = () => {
-    if (!documentFile) {
-      toast({
-        title: "No document selected",
-        status: "warning",
-        isClosable: true,
-      });
-      return;
+  const fetchDocumentIDs = async () => {
+    try {
+      const response = await getDCID();
+      if (response.status === 200) {
+        console.log('Document IDs fetched successfully:', response.data);
+        setDocumentIDs(response.data.map(item => item.id));
+      } else {
+        console.error('Error fetching document IDs:', response.statusText);
+      }
     }
-    toast({
-      title: "Document uploaded!",
-      description: documentFile.name,
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
+    catch (error) {
+      console.error('Error fetching document IDs:', error);
+    }
   };
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (!outputFileName.trim()) {
       toast({
         title: "File name cannot be empty",
@@ -93,12 +94,80 @@ export default function BatchMain({ setMainNavbar }) {
       });
       return;
     }
-    toast({
-      title: `File '${outputFileName}' saved!`,
-      status: "success",
-      isClosable: true,
-    });
+
+    if (!queriesFile || !relevantFile || !settingsFile) {
+      toast({
+        title: "All files must be uploaded",
+        status: "error",
+        isClosable: true,
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('dc_id', selectedDC);
+    formData.append('queries', queriesFile);
+    formData.append('relevance', relevantFile);
+    formData.append('settings', settingsFile);
+    formData.append('filename', outputFileName);
+    formData.append('download', false);
+
+    try {
+      setMainNavbar(false);
+      const response = await searchDocumentBatch(formData);
+
+      if (response.status === 200) {
+        toast({
+          title: "Files uploaded successfully",
+          status: "success",
+          isClosable: true,
+        });
+        console.log(response.data);
+
+        // Convert the query results to plain text
+        const textContent = response.data.query_results.map((item, idx) => {
+          return `Query ${idx + 1} (${item.query_id}):\n` +
+                `Initial Query:\n${item.initial_query}\n\n` +
+                `Expanded Query:\n${item.expanded_query}\n\n` +
+                `Initial AP: ${item.initial_ap}\n` +
+                `Expanded AP: ${item.expanded_ap}\n` +
+                `----------------------------------------\n`;
+        }).join('\n');
+
+        // Create a blob and generate a download link
+        const blob = new Blob([textContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${outputFileName || 'output'}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+      else {
+        toast({
+          title: "Upload failed",
+          description: response.statusText,
+          status: "error",
+          isClosable: true,
+        });
+      }
+
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        status: "error",
+        isClosable: true,
+      });
+      console.error("Upload error:", error);
+    }
   };
+
+  useEffect(() => {
+    fetchDocumentIDs();
+  }, []);
 
   return (
     <VStack spacing={8} p={8}>
@@ -112,25 +181,33 @@ export default function BatchMain({ setMainNavbar }) {
         <Text w="100px">Document</Text>
         <Select
           flex={1}
-          placeholder={documentFile ? documentFile.name : "No document collection selected"}
+          placeholder="No document collection selected"
           isReadOnly
           bg="#DCE2EE"
           cursor="pointer"
-        />
+          value={selectedDC}
+          onChange={(e) => setSelectedDC(e.target.value)}
+        >
+          {documentIDs.map((item) => (
+            <option key={item} value={item}>
+              {`Document collection ${item}`}
+            </option>
+          ))}
+        </Select>
       </Flex>
 
       <Flex gap={8} wrap="wrap" justify="center">
         <VStack>
           <Text fontWeight="semibold">Queries</Text>
-          <UploadCard onFileChange={(e) => setQueriesFile(e.target.files[0])} />
+          <UploadCard id="queries-upload" onFileChange={(e) => setQueriesFile(e.target.files[0])} />
         </VStack>
         <VStack>
           <Text fontWeight="semibold">Relevant Judgement</Text>
-          <UploadCard onFileChange={(e) => setRelevantFile(e.target.files[0])} />
+          <UploadCard id="relevant-upload" onFileChange={(e) => setRelevantFile(e.target.files[0])} />
         </VStack>
         <VStack>
           <Text fontWeight="semibold">Settings</Text>
-          <UploadCard onFileChange={(e) => setSettingsFile(e.target.files[0])} />
+          <UploadCard id="settings-upload" onFileChange={(e) => setSettingsFile(e.target.files[0])} />
         </VStack>
       </Flex>
 

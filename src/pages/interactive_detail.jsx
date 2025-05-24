@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import "@fontsource/poppins";
 import {
   Box,
   Flex,
@@ -14,61 +13,110 @@ import {
   MenuList,
   MenuItem,
 } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronLeftIcon } from "@chakra-ui/icons";
+import { getDocumentById } from "../services/interactive";
 
-const words = ["to", "do", "AutoCADaaaaaaaaaaaaaaaaaaaa", "Analysis", "Analysis"];
-const initialWeights = [0.3, 0.4, 0.2, 0.5, 0.6];
-const expandedWeights = [0.5, 0.6, 0.3, 0.7, 0.8];
-const totalDocs = 25;
-const pageSize = 10;
+export default function InteractiveDetail({ result, setPage }) {
+  const resultData = result || {};
+  const initialQueryVector = resultData.initial_query_vector || {};
+  const expandedQueryVector = resultData.expanded_query_vector || {};
+  const initialResults = resultData.initial_results || [];
+  const expandedResults = resultData.expanded_results || [];
 
-const InteractiveDetail = () => {
-  const [page, setPage] = useState(1);
-  const [sortMode, setSortMode] = useState("initial");
+  const allWordsSet = new Set([
+    ...Object.keys(initialQueryVector),
+    ...Object.keys(expandedQueryVector),
+  ]);
+  const words = Array.from(allWordsSet);
+  const initialWeights = words.map((word) => initialQueryVector[word] ?? 0);
+  const expandedWeights = words.map((word) => expandedQueryVector[word] ?? 0);
 
-  const pageCount = Math.ceil(totalDocs / pageSize);
+  const [paginationPage, setPaginationPage] = useState(1);
+  const [sortMode, setSortMode] = useState("expanded");
+  
+  useEffect(() => {
+    setPaginationPage(1);
+  }, [sortMode]);
 
   const scrollRef = useRef(null);
+  const pageSize = 10;
+  const [docDetails, setDocDetails] = useState({});
+
+  const resultMap = {};
+  for (const r of initialResults) {
+    resultMap[r.doc_id] = {
+      doc_id: r.doc_id,
+      initial_rank: r.rank,
+      initial_score: r.score,
+    };
+  }
+  for (const r of expandedResults) {
+    if (!resultMap[r.doc_id]) resultMap[r.doc_id] = { doc_id: r.doc_id };
+    resultMap[r.doc_id].expanded_rank = r.rank;
+    resultMap[r.doc_id].expanded_score = r.score;
+  }
+
+  const resultsSorted = Object.values(resultMap).sort((a, b) => {
+    const key = sortMode === "initial" ? "initial_rank" : "expanded_rank";
+    return (a[key] ?? Infinity) - (b[key] ?? Infinity);
+  });
+
+  const totalDocs = resultsSorted.length;
+  const pageCount = Math.ceil(totalDocs / pageSize);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
     }
-  }, [page]);
+  }, [paginationPage]);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      const sliced = resultsSorted.slice(
+        (paginationPage - 1) * pageSize,
+        paginationPage * pageSize
+      );
+      const promises = sliced.map((item) => getDocumentById(item.doc_id));
+      const responses = await Promise.all(promises);
+      const detailsMap = {};
+      responses.forEach((res) => {
+        if (res?.data?.id_doc) {
+          detailsMap[res.data.id_doc] = res.data;
+        }
+      });
+      setDocDetails(detailsMap);
+    };
+    fetchDetails();
+  }, [paginationPage, sortMode]);
 
   const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-    const renderPageNumbers = () => {
+    const generatePageNumbers = () => {
       const pages = [];
-      if (totalPages <= 5) {
+
+      if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) pages.push(i);
       } else {
-        if (currentPage <= 3) pages.push(1, 2, 3, "...", totalPages);
-        else if (currentPage >= totalPages - 2)
-          pages.push(1, "...", totalPages - 2, totalPages - 1, totalPages);
-        else pages.push(1, "...", currentPage, "...", totalPages);
+        if (currentPage <= 4) {
+          pages.push(1, 2, 3, 4, 5, "...", totalPages);
+        } else if (currentPage >= totalPages - 3) {
+          pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        } else {
+          pages.push(
+            1,
+            "...",
+            currentPage - 1,
+            currentPage,
+            currentPage + 1,
+            "...",
+            totalPages
+          );
+        }
       }
 
-      return pages.map((p, index) =>
-        p === "..." ? (
-          <Box key={index} px={2} py={1} fontSize="sm" color="gray.500">
-            ...
-          </Box>
-        ) : (
-          <Button
-            key={index}
-            size="sm"
-            variant={p === currentPage ? "outline" : "ghost"}
-            borderColor={p === currentPage ? "purple.500" : "transparent"}
-            borderWidth={p === currentPage ? "1px" : "0"}
-            color={p === currentPage ? "purple.600" : "gray.700"}
-            onClick={() => onPageChange(p)}
-            _hover={{ bg: "gray.100" }}
-          >
-            {p}
-          </Button>
-        )
-      );
+      return pages;
     };
+
+    const pageItems = generatePageNumbers();
 
     return (
       <Flex mt={4} justify="center" align="center" gap={1}>
@@ -80,7 +128,28 @@ const InteractiveDetail = () => {
         >
           ←
         </Button>
-        {renderPageNumbers()}
+
+        {pageItems.map((p, idx) =>
+          p === "..." ? (
+            <Box key={`ellipsis-${idx}`} px={2} py={1} fontSize="sm" color="gray.500">
+              ...
+            </Box>
+          ) : (
+            <Button
+              key={`page-${p}`}
+              size="sm"
+              variant={p === currentPage ? "outline" : "ghost"}
+              borderColor={p === currentPage ? "orange.400" : "transparent"}
+              borderWidth={p === currentPage ? "1px" : "0"}
+              color={p === currentPage ? "orange.600" : "gray.700"}
+              onClick={() => onPageChange(p)}
+              _hover={{ bg: "gray.100" }}
+            >
+              {p}
+            </Button>
+          )
+        )}
+
         <Button
           size="sm"
           variant="ghost"
@@ -94,13 +163,25 @@ const InteractiveDetail = () => {
   };
 
   const renderTable = () => (
-    <Flex justify="space-between" align="center">
-      <VStack spacing={0} align="stretch" justify="center" minW="200px" flexShrink={0}>
+    <Flex
+      justify="space-between"
+      align="center"
+      px={4}
+      pb={4}
+      w="100%"
+      borderBottom="1px solid"
+      borderColor="gray.200"
+    >
+      <VStack spacing={0} align="stretch" justify="center" minW="150px" flexShrink={0}>
         {["Expanded Query", "Initial Weight", "Expanded Weight"].map((label, i) => (
-          <Box key={i} h="40px" display="flex" alignItems="center" justifyContent="flex-start">
-            <Text whiteSpace="nowrap" fontWeight="bold" fontSize="lg">
-              {label}
-            </Text>
+          <Box
+            key={i}
+            h="40px"
+            display="flex"
+            alignItems="center"
+            justifyContent="flex-start"
+          >
+            <Text whiteSpace="nowrap" fontWeight="bold" fontSize="md">{label}</Text>
           </Box>
         ))}
       </VStack>
@@ -115,12 +196,12 @@ const InteractiveDetail = () => {
             ))}
             {initialWeights.map((w, i) => (
               <GridItem key={`iw-${i}`} border="1px solid" borderColor="gray.300" h="40px" px={2} display="flex" alignItems="center" justifyContent="center" fontSize="xs">
-                {w}
+                {w.toFixed(3)}
               </GridItem>
             ))}
             {expandedWeights.map((w, i) => (
               <GridItem key={`ew-${i}`} border="1px solid" borderColor="gray.300" h="40px" px={2} display="flex" alignItems="center" justifyContent="center" fontSize="xs">
-                {w}
+                {w.toFixed(3)}
               </GridItem>
             ))}
           </Grid>
@@ -128,24 +209,9 @@ const InteractiveDetail = () => {
       </Box>
 
       <Flex ml={4} direction="column" alignItems="center" gap={2} height="120px" justifyContent="center" flexShrink={0}>
-        <Text textAlign="center" fontWeight="light" fontSize="md">
-          Sort By Rank
-        </Text>
+        <Text textAlign="center" fontSize="md">Sort By Rank</Text>
         <Menu>
-          <MenuButton
-            key={sortMode}
-            as={Button}
-            rightIcon={<ChevronDownIcon />}
-            bg="#F48C06"
-            color="white"
-            _hover={{ bg: "#e07c04" }}
-            _expanded={{ bg: "#e07c04" }}
-            borderRadius="lg"
-            minW="120px"
-            textAlign="center"
-            fontWeight="light"
-            fontSize="sm"
-          >
+          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} bg="orange.400" color="white" _hover={{ bg: "orange.500" }} _expanded={{ bg: "orange.500" }} borderRadius="lg" minW="120px" textAlign="center" fontWeight="bold" fontSize="sm">
             {sortMode === "initial" ? "Initial" : "Expanded"}
           </MenuButton>
           <MenuList>
@@ -157,43 +223,122 @@ const InteractiveDetail = () => {
     </Flex>
   );
 
-  const renderCard = (index) => (
-    <Flex key={index} p={4} mb={4} justify="space-between" align="center">
-      <Box>
-        <Text fontWeight="bold" fontSize="md" color="blue.600" mb={1} isTruncated>
-          Hemendra Mali - Product Design Engineer - Freelancer.com
-        </Text>
-        <Text fontSize="sm" color="gray.600" noOfLines={2}>
-          I am expert in 3D & 2D designing and Rendering. I have great experience in Analysis & modeling using AutoCAD and similar tools...
-        </Text>
-      </Box>
-
-      <Grid templateColumns="60px repeat(2, 50px)" templateRows="repeat(3, auto)" gap={2} alignItems="center" justifyItems="center" ml={4}>
-        <Box />
-        <Text fontWeight="bold" fontSize="sm">Awal</Text>
-        <Text fontWeight="bold" fontSize="sm">Akhir</Text>
-        <Text fontWeight="bold" fontSize="sm">Rank</Text>
-        <Input size="sm" bg="rgba(244, 140, 6, 0.14)" border="none" borderRadius="md" w="50px" h="30px" />
-        <Input size="sm" bg="rgba(244, 140, 6, 0.14)" border="none" borderRadius="md" w="50px" h="30px" />
-        <Text fontWeight="bold" fontSize="sm">Score</Text>
-        <Input size="sm" bg="rgba(244, 140, 6, 0.14)" border="none" borderRadius="md" w="50px" h="30px" />
-        <Input size="sm" bg="rgba(244, 140, 6, 0.14)" border="none" borderRadius="md" w="50px" h="30px" />
-      </Grid>
-    </Flex>
-  );
-
+  const renderCard = (item, index) => {
+    const doc = docDetails[item.doc_id] || {};
     return (
-    <Flex direction="column" px={16} py={8}>
-      <Box>{renderTable()}</Box>
+      <Flex key={index} p={4} justify="space-between" align="center" w="full">
+        <Box
+          minW="60px"
+          minH="80px"
+          bg="gray.100"
+          borderRadius="md"
+          mr={4}
+          textAlign="center"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Text fontSize="sm" fontWeight="bold" color="gray.600">
+            ID
+          </Text>
+          <Text fontSize="md" fontWeight="bold" color="orange.600">
+            {item.doc_id}
+          </Text>
+        </Box>
 
-      <Box ref={scrollRef} mt={6} maxHeight="55vh" overflowY="auto">
-        {[...Array(Math.min(pageSize, totalDocs - (page - 1) * pageSize)).keys()].map((i) =>
-          renderCard(i + (page - 1) * pageSize)
-        )}
-        <Pagination currentPage={page} totalPages={pageCount} onPageChange={setPage} />
+        <Box flex="1" pr={4} maxW={800}>
+          <Box overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+            <Text fontWeight="bold" fontSize="md" color="blue.600" isTruncated>
+              {doc.title || `Document ID: ${item.doc_id}`}
+            </Text>
+          </Box>
+          {doc.author && (
+            <Text fontSize="sm" fontStyle="italic" color="gray.500" mb={1} isTruncated>
+              by {doc.author}
+            </Text>
+          )}
+          <Text fontSize="sm" color="gray.600" noOfLines={2}>
+            {doc.content || "No snippet available."}
+          </Text>
+        </Box>
+
+        <Grid
+          templateColumns="60px repeat(2, 60px)"
+          templateRows="repeat(3, auto)"
+          gap={2}
+          alignItems="center"
+          justifyItems="center"
+        >
+          <Box />
+          <Text fontWeight="bold" fontSize="sm">Awal</Text>
+          <Text fontWeight="bold" fontSize="sm">Akhir</Text>
+          <Text fontWeight="bold" fontSize="sm">Rank</Text>
+          <Input size="sm" bg="orange.50" w="60px" h="30px" value={item.initial_rank ?? "-"} readOnly />
+          <Input size="sm" bg="orange.50" w="60px" h="30px" value={item.expanded_rank ?? "-"} readOnly />
+          <Text fontWeight="bold" fontSize="sm">Score</Text>
+          <Input size="sm" bg="orange.50" w="60px" h="30px" value={item.initial_score?.toFixed(3) ?? "-"} readOnly />
+          <Input size="sm" bg="orange.50" w="60px" h="30px" value={item.expanded_score?.toFixed(3) ?? "-"} readOnly />
+        </Grid>
+      </Flex>
+    );
+  };
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      const sliced = resultsSorted.slice(
+        (paginationPage - 1) * pageSize,
+        paginationPage * pageSize
+      );
+      const promises = sliced.map((item) => getDocumentById(item.doc_id));
+      const responses = await Promise.all(promises);
+
+      const detailsMap = {};
+      responses.forEach((res, idx) => {
+        const docData = res?.data;
+        if (docData?.id_doc) {
+          detailsMap[sliced[idx].doc_id] = docData;
+        } else {
+        }
+      });
+
+      setDocDetails(detailsMap);
+    };
+
+    fetchDetails();
+  }, [paginationPage, sortMode]);
+
+  return (
+    <VStack spacing={0} align="stretch">
+      <Box>
+        <Button
+          leftIcon={<ChevronLeftIcon />}
+          variant="ghost"
+          color="black"
+          fontSize="sm"
+          fontWeight="normal"
+          _hover={{ bg: 'transparent', textDecoration: 'underline' }}
+          onClick={() => setPage("interactive")}
+          px={2}
+        >
+          Back to Search
+        </Button>
       </Box>
-    </Flex>
+      <Box px={16}>{renderTable()}</Box>
+      <Box ref={scrollRef} maxHeight="calc(100vh - 312px)" overflowY="auto">
+        <VStack spacing={0}>
+          {resultsSorted
+            .slice((paginationPage - 1) * pageSize, paginationPage * pageSize)
+            .map((item, i) => (
+              <Box key={i} px={16} w="full">
+                {renderCard(item, i)}
+              </Box>
+            ))}
+          <Box px={16} w="full">
+            <Pagination currentPage={paginationPage} totalPages={pageCount} onPageChange={setPaginationPage} />
+          </Box>
+        </VStack>
+      </Box>
+    </VStack>
   );
-};
-
-export default InteractiveDetail;
+}
