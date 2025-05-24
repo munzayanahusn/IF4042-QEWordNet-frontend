@@ -1,3 +1,7 @@
+import { useState, useEffect, useRef } from "react";
+import { getDCID, searchDocument } from "../services/interactive"
+import logo1 from "../assets/logo1.svg";
+import { Search2Icon } from "@chakra-ui/icons";
 import {
   Image,
   Box,
@@ -13,17 +17,29 @@ import {
   Select,
   VStack,
   HStack,
+  Checkbox,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  Button,
+  useDisclosure
 } from "@chakra-ui/react";
-import { Search2Icon } from "@chakra-ui/icons";
-import { useState, useEffect } from "react";
-import logo1 from "../assets/logo1.svg";
-import { getDCID, searchDocument } from "../services/interactive"
+
 
 export default function InteractiveMain({ setMainNavbar }) {
   const [query, setQuery] = useState('');
   const [stemming, setStemming] = useState(false);
   const [stopWord, setStopWord] = useState(false);
   const [synset, setSynset] = useState(["lemmas"]);
+  const [lemmas, setLemmas] = useState(true);
+  const [hyponyms, setHyponyms] = useState(false);
+  const [hypernyms, setHypernyms] = useState(false);
+  const [alsoSees, setAlsoSees] = useState(false);
+  const [similarTos, setSimilarTos] = useState(false);
+  const [verbGroups, setVerbGroups] = useState(false);
   const [queryTF, setQueryTF] = useState("raw");
   const [queryIDF, setQueryIDF] = useState(true);
   const [queryNorm, setQueryNorm] = useState(true);
@@ -32,6 +48,8 @@ export default function InteractiveMain({ setMainNavbar }) {
   const [docNorm, setDocNorm] = useState(true);
   const [documentIDs, setDocumentIDs] = useState([]);
   const [selectedDC, setSelectedDC] = useState("");
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = useRef();
 
   const fetchDocumentIDs = async () => {
     try {
@@ -42,7 +60,6 @@ export default function InteractiveMain({ setMainNavbar }) {
       } else {
         console.error('Error fetching document IDs:', response.statusText);
       }
-      // Handle the response data as needed
     }
     catch (error) {
       console.error('Error fetching document IDs:', error);
@@ -67,26 +84,39 @@ export default function InteractiveMain({ setMainNavbar }) {
       console.log("Search Data:", data);
       const response = await searchDocument(data);
       // Redirect to interactive_detail
-      setMainNavbar(false)
+      setMainNavbar(false);
       if (response.status === 200) {
         console.log('Users fetched successfully:', response.data);
       } else {
+        onOpen();
         console.error('Error fetching users:', response.statusText);
       }
       // Handle the response data as needed
     } catch (error) {
+      onOpen();
       console.error('Error fetching users:', error);
     }
   };
 
+  const formSynset = () => {
+    let synset = [];
+    if (lemmas) synset.push("lemmas");
+    if (hyponyms) synset.push("hyponyms");
+    if (hypernyms) synset.push("hypernyms");
+    if (alsoSees) synset.push("also_sees");
+    if (similarTos) synset.push("similar_tos");
+    if (verbGroups) synset.push("verb_groups");
+    return synset;
+  };
 
   useEffect(() => {
     fetchDocumentIDs();
   }, []);
   
   useEffect(() => {
-    console.log("Document IDs:", documentIDs);
-  }, [documentIDs]);
+    setSynset(formSynset());
+  }, [lemmas, hyponyms, hypernyms, alsoSees, similarTos, verbGroups]);
+
 
   return (
     <Box minH="100vh" bg="white" px={8} mt={20} mb={12}>
@@ -117,6 +147,57 @@ export default function InteractiveMain({ setMainNavbar }) {
             />
           </InputRightElement>
         </InputGroup>
+
+        {/* Synset Options */}
+        <HStack mt={6} spacing={8}>
+          <Checkbox
+            isChecked={lemmas}
+            onChange={(e) => setLemmas(e.target.checked)}
+            colorScheme="purple"
+          >
+            Lemmas
+          </Checkbox>
+
+          <Checkbox
+            isChecked={hyponyms}
+            onChange={(e) => setHyponyms(e.target.checked)}
+            colorScheme="purple"
+          >
+            Hyponyms
+          </Checkbox>
+
+          <Checkbox
+            isChecked={hypernyms}
+            onChange={(e) => setHypernyms(e.target.checked)}
+            colorScheme="purple"
+          >
+            Hypernyms
+          </Checkbox>
+
+          <Checkbox
+            isChecked={alsoSees}
+            onChange={(e) => setAlsoSees(e.target.checked)}
+            colorScheme="purple"
+          >
+            Also Sees
+          </Checkbox>
+
+          <Checkbox
+            isChecked={similarTos}
+            onChange={(e) => setSimilarTos(e.target.checked)}
+            colorScheme="purple"
+          >
+            Similar Tos
+          </Checkbox>
+
+          <Checkbox
+            isChecked={verbGroups}
+            onChange={(e) => setVerbGroups(e.target.checked)}
+            colorScheme="purple"
+          >
+            Verb Groups
+          </Checkbox>
+        </HStack>
 
 
         {/* Switches */}
@@ -296,6 +377,30 @@ export default function InteractiveMain({ setMainNavbar }) {
           </Flex>
         </VStack>
       </Flex>
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Error
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Choose a document collection first before searching.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                OK
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }
