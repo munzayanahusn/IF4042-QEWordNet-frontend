@@ -11,3 +11,5 @@ export const searchDocument = (data) =>
     params: data,
     paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
 });
+
+export const getDocumentById = (id) => axios.get(`${API_BASE}/docs/${id}`);
