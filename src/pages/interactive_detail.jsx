@@ -307,7 +307,7 @@ export default function InteractiveDetail({ result, setPage }) {
   }, [paginationPage, sortMode]);
 
   return (
-    <VStack spacing={0} px={16} align="stretch">
+    <VStack spacing={0} align="stretch">
       <Box>
         <Button
           leftIcon={<ChevronLeftIcon />}
@@ -322,12 +322,20 @@ export default function InteractiveDetail({ result, setPage }) {
           Back to Search
         </Button>
       </Box>
-      <Box>{renderTable()}</Box>
-      <Box ref={scrollRef} maxHeight="calc(100vh - 312px)" overflowY="auto" pr={2}>
-        {resultsSorted
-          .slice((paginationPage - 1) * pageSize, paginationPage * pageSize)
-          .map((item, i) => renderCard(item, i))}
-        <Pagination currentPage={paginationPage} totalPages={pageCount} onPageChange={setPaginationPage} />
+      <Box px={16}>{renderTable()}</Box>
+      <Box ref={scrollRef} maxHeight="calc(100vh - 312px)" overflowY="auto">
+        <VStack spacing={0}>
+          {resultsSorted
+            .slice((paginationPage - 1) * pageSize, paginationPage * pageSize)
+            .map((item, i) => (
+              <Box key={i} px={16} w="full">
+                {renderCard(item, i)}
+              </Box>
+            ))}
+          <Box px={16} w="full">
+            <Pagination currentPage={paginationPage} totalPages={pageCount} onPageChange={setPaginationPage} />
+          </Box>
+        </VStack>
       </Box>
     </VStack>
   );
