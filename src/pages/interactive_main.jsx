@@ -29,7 +29,7 @@ import {
 } from "@chakra-ui/react";
 
 
-export default function InteractiveMain({ setMainNavbar }) {
+export default function InteractiveMain({ setMainNavbar, setSearchResult, setPage }) {
   const [query, setQuery] = useState('');
   const [stemming, setStemming] = useState(false);
   const [stopWord, setStopWord] = useState(false);
@@ -87,6 +87,9 @@ export default function InteractiveMain({ setMainNavbar }) {
       setMainNavbar(false);
       if (response.status === 200) {
         console.log('Users fetched successfully:', response.data);
+        setMainNavbar(false);
+        setSearchResult(response.data);
+        setPage("interactive_result");
       } else {
         onOpen();
         console.error('Error fetching users:', response.statusText);
