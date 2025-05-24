@@ -1,169 +1,539 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box, 
+  Flex, 
+  Text, 
+  Button, 
+  Heading, 
+  useToast, 
+  Switch, 
+  HStack,
+  Table, 
+  Thead, 
+  Tbody, 
+  Tr, 
+  Th, 
+  Td, 
+  TableContainer, 
+  Divider, 
+  Select,
+  Input, 
+  InputGroup, 
+  InputLeftElement, 
+  List, 
+  ListItem,
+  useDisclosure, 
+  useOutsideClick, 
+  Modal, 
+  ModalOverlay, 
+  ModalContent,
+  ModalHeader, 
+  ModalFooter, 
+  ModalBody, 
+  ModalCloseButton
+} from '@chakra-ui/react';
+import { ArrowUpIcon, ChevronLeftIcon, SearchIcon } from '@chakra-ui/icons';
 import '@fontsource/poppins';
 import {
-  Box,
-  Flex,
-  Text,
-  Select,
-  Button,
-  Heading,
-  useToast,
-  Switch,
-  HStack,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Divider,
-} from '@chakra-ui/react';
-import { ArrowUpIcon, ChevronLeftIcon } from '@chakra-ui/icons';
+  fetchCollections,
+  fetchDocumentsByCollection,
+  fetchInvertedFile,
+  uploadFile
+} from '../services/manage_document';
+
+function CustomSelectWithSearch({ selectedDoc, setSelectedDoc, documents, isLoading }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const ref = useRef();
+
+  useOutsideClick({
+    ref: ref,
+    handler: onClose,
+  });
+
+  const filteredDocs = documents.filter(doc => {
+    const docName = typeof doc === 'string' ? doc : (doc.name || doc.filename || doc.title || String(doc));
+    return docName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const displayValue = isOpen ? searchTerm : selectedDoc || 'No document selected';
+
+  return (
+    <Box position="relative" ref={ref} fontFamily="Poppins" width="100%">
+      <InputGroup>
+        <InputLeftElement pointerEvents="none" height="100%" alignItems="center">
+          <SearchIcon color="gray.300" boxSize={4} />
+        </InputLeftElement>
+        <Input
+          placeholder="No document selected"
+          value={displayValue}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            if (!isOpen) onOpen();
+          }}
+          onClick={onOpen}
+          bg="gray.100"
+          border="none"
+          borderRadius="md"
+          fontSize="md"
+          height="10"
+          boxShadow="sm"
+          _focus={{ boxShadow: 'outline' }}
+          _placeholder={{ color: 'gray.500' }}
+          isDisabled={isLoading || documents.length === 0}
+        />
+      </InputGroup>
+
+      {isOpen && (
+        <List
+          position="absolute"
+          width="100%"
+          mt={2}
+          bg="white"
+          boxShadow="md"
+          borderRadius="md"
+          maxH="240px"
+          overflowY="auto"
+          zIndex="dropdown"
+          border="1px solid"
+          borderColor="gray.200"
+        >
+          {isLoading ? (
+            <ListItem px={4} py={3} color="gray.500" fontSize="md">
+              Loading documents...
+            </ListItem>
+          ) : filteredDocs.length > 0 ? (
+            filteredDocs.map((doc, index) => {
+              const docName = typeof doc === 'string' ? doc : (doc.name || doc.filename || doc.title || String(doc));
+              return (
+                <ListItem
+                  key={index}
+                  px={4}
+                  py={3}
+                  cursor="pointer"
+                  _hover={{ bg: 'gray.100' }}
+                  onClick={() => {
+                    setSelectedDoc(docName);
+                    setSearchTerm('');
+                    onClose();
+                  }}
+                  fontSize="md"
+                >
+                  {docName}
+                </ListItem>
+              );
+            })
+          ) : (
+            <ListItem px={4} py={3} color="gray.500" fontSize="md">
+              {documents.length === 0 ? 'No documents in collection' : 'No documents found'}
+            </ListItem>
+          )}
+        </List>
+      )}
+    </Box>
+  );
+}
 
 export default function ManageDocument() {
   const [selectedDoc, setSelectedDoc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [stemming, setStemming] = useState(true);
   const [stopWord, setStopWord] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [collections, setCollections] = useState([]);
+  const [selectedCollection, setSelectedCollection] = useState('');
+  const [documents, setDocuments] = useState([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [invertedFileData, setInvertedFileData] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const toast = useToast();
 
-  const handleUpload = () => {
-    setIsUploading(true);
-    setTimeout(() => {
+  useEffect(() => {
+    fetchCollections()
+      .then(setCollections)
+      .catch(err => console.error('Failed to fetch document collections:', err));
+  }, []);
+
+  const handleSearch = async () => {
+    if (!selectedCollection || !selectedDoc) {
       toast({
-        title: 'Upload complete',
-        description: `Document ${selectedDoc || 'untitled'} uploaded.`,
-        status: 'success',
+        title: 'Incomplete Selection',
+        description: 'Please select both document collection and document.',
+        status: 'warning',
         duration: 3000,
         isClosable: true,
       });
-      setIsUploading(false);
-    }, 2000);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const data = await fetchInvertedFile({
+        id_dc: selectedCollection,
+        id_doc: selectedDoc,
+        stem: stemming,
+        stopword: stopWord,
+      });
+      setInvertedFileData(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const invertedFileData = Array.from({ length: 60 }, (_, i) => ({
-    term: `Term${i + 1}`,
-    document: `D${(i % 5) + 1}`,
-    raw: Math.random().toFixed(2),
-    logarithmic: Math.random().toFixed(2),
-    binary: Math.random().toFixed(2),
-    augmented: Math.random().toFixed(2),
-    idf: Math.random().toFixed(2),
-  }));
+  useEffect(() => {
+    if (selectedCollection) {
+      setIsLoadingDocs(true);
+      setSelectedDoc('');
+      setDocuments([]);
+      fetchDocumentsByCollection(selectedCollection)
+        .then(data => {
+          console.log('Fetched documents:', data);
+          const docNames = Array.isArray(data)
+            ? data.map(doc => String(doc)) 
+            : [];
+          setDocuments(docNames);
+        })
+        .catch(err => {
+          console.error('Failed to fetch documents:', err);
+          toast({
+            title: 'Error fetching documents',
+            description: 'Failed to load documents from the selected collection',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
+          });
+          setDocuments([]);
+        })
+        .finally(() => setIsLoadingDocs(false));
+    } else {
+      setDocuments([]);
+      setSelectedDoc('');
+    }
+  }, [selectedCollection, toast]);
+
+
+  const handleFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const handleUpload = async () => {
+  if (!selectedFile) {
+    toast({
+      title: 'No file selected',
+      description: 'Please select a file to upload',
+      status: 'warning',
+      duration: 3000,
+      isClosable: true,
+    });
+    return;
+  }
+
+  try {
+    setIsUploading(true);
+    await uploadFile(selectedFile);
+
+    toast({
+      title: 'Upload complete',
+      description: `Document ${selectedFile.name} uploaded successfully.`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+
+    const refreshed = await fetchCollections();
+    setCollections(refreshed);
+
+    if (selectedCollection) {
+      const docsData = await fetchDocumentsByCollection(selectedCollection);
+      const docNames = Array.isArray(data)
+        ? data.map(doc => String(doc)) 
+        : [];
+      setDocuments(docNames);
+    }
+
+    onClose();
+    setSelectedFile(null);
+  } catch (error) {
+    toast({
+      title: 'Upload error',
+      description: error.message || 'Something went wrong',
+      status: 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  } finally {
+    setIsUploading(false);
+  }
+};
+
+  const handleCollectionChange = (e) => {
+    setSelectedCollection(e.target.value);
+  };
 
   return (
     <Box w="100%" px={16} bg="white" fontFamily="'Poppins', sans-serif">
-      <Flex mb={6} ml={-4}>
-        <Button 
-          leftIcon={<ChevronLeftIcon />} 
-          variant="ghost" 
+
+      <Flex mb={6} justify="flex-end">
+        <Button
+          onClick={onOpen}
+          leftIcon={<ArrowUpIcon boxSize={5} />}
+          size="md"
+          height="10"
+          px={8}
+          bg="#FDEDD4"
+          _hover={{ bg: 'orange.100' }}
           color="black"
-          fontSize="sm"
-          fontWeight="normal"
-          _hover={{ bg: 'transparent', textDecoration: 'underline' }}
-          onClick={() => console.log('Back to search')}
-          px={2}
+          borderRadius="md"
+          boxShadow="md"
+          fontSize="md"
+          minWidth="180px"
         >
-          Back to Search
+          Upload
         </Button>
       </Flex>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader textAlign="center">Upload Files</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Flex
+              direction="column"
+              align="center"
+              justify="center"
+              border="2px dashed gray"
+              borderRadius="md"
+              p={6}
+              cursor="pointer"
+              _hover={{ borderColor: 'orange.400' }}
+              onClick={() => document.getElementById('file-upload').click()}
+            >
+              <ArrowUpIcon boxSize={8} color="orange.400" mb={3} />
+              <Text fontWeight="medium" mb={1}>Click to browse files</Text>
+              <Text fontSize="sm" color="gray.500">or drag and drop</Text>
+              <Input
+                id="file-upload"
+                type="file"
+                onChange={handleFileChange}
+                display="none"
+                accept=".txt, .all"
+              />
+            </Flex>
+            {selectedFile && (
+              <Box mt={4} p={3} bg="gray.50" borderRadius="md">
+                <Text fontSize="sm">{selectedFile.name}</Text>
+                <Text fontSize="xs" color="gray.500">
+                  {(selectedFile.size / 1024).toFixed(2)} KB
+                </Text>
+              </Box>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="orange"
+              isLoading={isUploading}
+              onClick={handleUpload}
+              isDisabled={!selectedFile}
+            >
+              Upload
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Flex mb={8} align="center" gap={4}>
-        <Text fontWeight="bold" fontSize="lg" minW="100px">Document</Text>
-        <Flex flex="1" gap={3} align="center">
+        <Text fontWeight="bold" fontSize="lg" minW="120px">Document</Text>
+        <Flex flex="1" gap={4} align="center">
           <Select
-            placeholder="No document selected"
-            value={selectedDoc}
-            onChange={e => setSelectedDoc(e.target.value)}
+            placeholder="No collection document selected"
+            value={selectedCollection}
+            onChange={handleCollectionChange}
             bg="gray.100"
             border="none"
             borderRadius="md"
-            fontSize="sm"
-            height="8"
-            flex="1"
+            fontSize="md"
+            height="10"
+            width="75%"
             boxShadow="sm"
             _focus={{ boxShadow: 'outline' }}
           >
-            <option value="report1.pdf">Report 1</option>
-            <option value="draft2.docx">Draft 2</option>
+            {collections.map((col) => (
+              <option key={col.id} value={col.id}>
+                {col.dc_path.split('\\').pop()}
+              </option>
+            ))}
           </Select>
+
+          <Box flex="1" position="relative" zIndex={20} minWidth="280px">
+            <CustomSelectWithSearch
+              selectedDoc={selectedDoc}
+              setSelectedDoc={setSelectedDoc}
+              documents={documents}
+              isLoading={isLoadingDocs}
+            />
+          </Box>
           <Button
-            onClick={handleUpload}
-            leftIcon={<ArrowUpIcon />}
-            isLoading={isUploading}
-            size="lg"
-            height="8"
+            height="10"
             bg="orange.400"
             _hover={{ bg: 'orange.500' }}
             color="white"
             borderRadius="md"
-            boxShadow="lg"
-            fontSize="sm"
+            boxShadow="md"
+            fontSize="md"
+            px={6}
+            isDisabled={!selectedCollection || !selectedDoc || isSearching}
+            isLoading={isSearching}
+            onClick={handleSearch}
           >
-            Upload
+            Search
           </Button>
         </Flex>
       </Flex>
 
-      {/* Horizontal Line Below Document Input */}
-      <Divider borderColor="gray.200" mb={6} />
+      <Divider borderColor="gray.300" mb={8} />
 
-      {/* Title & Toggles */}
-      <Flex justify="space-between" align="center" mb={3}>
-        <Heading fontSize="lg" fontWeight="bold">Inverted File</Heading>
+      <Flex justify="space-between" align="center" mb={4}>
+        <Heading fontSize="xl" fontWeight="bold">Inverted File</Heading>
         <HStack spacing={8}>
           <HStack>
-            <Text fontSize="sm">Stemming</Text>
-            <Switch size="sm" isChecked={stemming} onChange={() => setStemming(!stemming)} colorScheme="orange" />
+            <Text fontSize="md">Stemming</Text>
+            <Switch isChecked={stemming} onChange={() => setStemming(!stemming)} colorScheme="purple" />
           </HStack>
           <HStack>
-            <Text fontSize="sm">Stop Word</Text>
-            <Switch size="sm" isChecked={stopWord} onChange={() => setStopWord(!stopWord)} colorScheme="orange" />
+            <Text fontSize="md">Stop Word</Text>
+            <Switch isChecked={stopWord} onChange={() => setStopWord(!stopWord)} colorScheme="purple" />
           </HStack>
         </HStack>
       </Flex>
 
-      {/* Table */}
       <Box borderRadius="md" overflow="hidden">
-        <TableContainer maxH="calc(100vh - 330px)" overflowY="auto" overflowX="auto">
-          <Table variant="simple" size="sm" tableLayout="fixed" w="100%">
-            <colgroup>
-              <col width="14.28%" />
-              <col width="14.28%" />
-              <col width="14.28%" />
-              <col width="14.28%" />
-              <col width="14.28%" />
-              <col width="14.28%" />
-              <col width="14.28%" />
-            </colgroup>
-            <Thead position="sticky" top={0} bg="white" zIndex="docked">
-              <Tr>
-                <Th rowSpan={2} px={4} py={2} textAlign="center" borderBottomWidth="1px">Term</Th>
-                <Th rowSpan={2} px={4} py={2} textAlign="center" borderBottomWidth="1px">Document</Th>
-                <Th colSpan={4} px={4} py={2} pr={4} textAlign="center" borderBottomWidth="0">Term-Frequency</Th>
-                <Th rowSpan={2} px={4} py={2} ml={4} textAlign="center" borderBottomWidth="1px">IDF</Th>
+        <TableContainer maxH="calc(100vh - 350px)" overflowY="auto" overflowX="auto">
+      <Table variant="simple" size="md" w="100%">
+        <colgroup>
+          <col width="16%" />
+          <col width="14%" />
+          <col width="14%" />
+          <col width="14%" />
+          <col width="14%" />
+          <col width="14%" />
+        </colgroup>
+        <Thead>
+          <Tr>
+            <Th
+              rowSpan={2}
+              bg="white"
+              position="sticky"
+              top={0}
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              Term
+            </Th>
+            <Th
+              colSpan={4}
+              textAlign="center"
+              bg="white"
+              position="sticky"
+              top={0}
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              Term-Frequency
+            </Th>
+            <Th
+              rowSpan={2}
+              bg="white"
+              position="sticky"
+              top={0}
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              IDF
+            </Th>
+          </Tr>
+          <Tr>
+            <Th
+              bg="white"
+              position="sticky"
+              top="38px"
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              Raw
+            </Th>
+            <Th
+              bg="white"
+              position="sticky"
+              top="38px"
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              Logarithmic
+            </Th>
+            <Th
+              bg="white"
+              position="sticky"
+              top="38px"
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              Binary
+            </Th>
+            <Th
+              bg="white"
+              position="sticky"
+              top="38px"
+              zIndex="docked"
+              fontWeight="bold"
+              fontSize="md"
+            >
+              Augmented
+            </Th>
+          </Tr>
+        </Thead>
+
+        <Tbody>
+          {invertedFileData.length > 0 ? (
+            invertedFileData.map((row, i) => (
+              <Tr key={i}>
+                <Td>{row.term}</Td>
+                <Td>{row.tf_raw}</Td>
+                <Td>{row.tf_log}</Td>
+                <Td>{row.tf_binary}</Td>
+                <Td>{row.tf_augmented}</Td>
+                <Td>{row.idf}</Td>
               </Tr>
-              <Tr>
-                <Th px={4} py={2} textAlign="center" borderBottomWidth="1px">Raw</Th>
-                <Th px={4} py={2} textAlign="center" borderBottomWidth="1px">Logarithmic</Th>
-                <Th px={4} py={2} textAlign="center" borderBottomWidth="1px">Binary</Th>
-                <Th px={4} py={2} textAlign="center" borderBottomWidth="1px">Augmented</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {invertedFileData.map((row, i) => (
-                <Tr key={i} _hover={{ bg: 'gray.50' }}>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.term}</Td>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.document}</Td>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.raw}</Td>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.logarithmic}</Td>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.binary}</Td>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.augmented}</Td>
-                  <Td px={4} py={2} textAlign="center" borderBottomWidth="1px">{row.idf}</Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
+            ))
+          ) : (
+            <Tr>
+              <Td colSpan={6} textAlign="center" py={6} color="gray.500" fontStyle="italic">
+                No data available. Please select and search a document.
+              </Td>
+            </Tr>
+          )}
+        </Tbody>
+
+        </Table>
+
         </TableContainer>
       </Box>
     </Box>
