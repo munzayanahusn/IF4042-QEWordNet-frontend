@@ -33,6 +33,11 @@ export default function InteractiveDetail({ result, setPage }) {
 
   const [paginationPage, setPaginationPage] = useState(1);
   const [sortMode, setSortMode] = useState("expanded");
+  
+  useEffect(() => {
+    setPaginationPage(1);
+  }, [sortMode]);
+
   const scrollRef = useRef(null);
   const pageSize = 10;
   const [docDetails, setDocDetails] = useState({});
@@ -277,8 +282,32 @@ export default function InteractiveDetail({ result, setPage }) {
     );
   };
 
+  useEffect(() => {
+    const fetchDetails = async () => {
+      const sliced = resultsSorted.slice(
+        (paginationPage - 1) * pageSize,
+        paginationPage * pageSize
+      );
+      const promises = sliced.map((item) => getDocumentById(item.doc_id));
+      const responses = await Promise.all(promises);
+
+      const detailsMap = {};
+      responses.forEach((res, idx) => {
+        const docData = res?.data;
+        if (docData?.id_doc) {
+          detailsMap[sliced[idx].doc_id] = docData;
+        } else {
+        }
+      });
+
+      setDocDetails(detailsMap);
+    };
+
+    fetchDetails();
+  }, [paginationPage, sortMode]);
+
   return (
-    <VStack spacing={0} px={16} py={4} align="stretch">
+    <VStack spacing={0} px={16} align="stretch">
       <Box>
         <Button
           leftIcon={<ChevronLeftIcon />}
@@ -294,7 +323,7 @@ export default function InteractiveDetail({ result, setPage }) {
         </Button>
       </Box>
       <Box>{renderTable()}</Box>
-      <Box ref={scrollRef} maxHeight="45vh" overflowY="auto" pr={2}>
+      <Box ref={scrollRef} maxHeight="calc(100vh - 312px)" overflowY="auto" pr={2}>
         {resultsSorted
           .slice((paginationPage - 1) * pageSize, paginationPage * pageSize)
           .map((item, i) => renderCard(item, i))}
