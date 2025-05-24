@@ -1,5 +1,5 @@
 import { Box } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "./components/main_navbar";
 import SubNavbar from "./components/sub_navbar";
 import InteractiveMain from "./pages/interactive_main";
@@ -8,7 +8,9 @@ import ManageDocument from "./pages/manage_document";
 import InteractiveDetail from "./pages/interactive_detail";
 
 export default function App() {
-  const [page, setPage] = useState("interactive");
+  const [page, setPage] = useState(() => {
+    return localStorage.getItem("activePage") || "interactive";
+  });
   const [isMainNavbar, setMainNavbar] = useState(true);
   const [searchResult, setSearchResult] = useState(null);
 
@@ -27,6 +29,10 @@ export default function App() {
                   setPage={setPage} />;
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem("activePage", page);
+  }, [page]);
 
   return (
     <Box minH="100vh" bg="white" pb={2}>
