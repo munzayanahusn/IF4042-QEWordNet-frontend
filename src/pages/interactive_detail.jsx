@@ -209,9 +209,9 @@ export default function InteractiveDetail({ result, setPage }) {
       </Box>
 
       <Flex ml={4} direction="column" alignItems="center" gap={2} height="120px" justifyContent="center" flexShrink={0}>
-        <Text textAlign="center" fontWeight="light" fontSize="md">Sort By Rank</Text>
+        <Text textAlign="center" fontSize="md">Sort By Rank</Text>
         <Menu>
-          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} bg="orange.400" color="white" _hover={{ bg: "orange.500" }} _expanded={{ bg: "orange.500" }} borderRadius="lg" minW="120px" textAlign="center" fontWeight="light" fontSize="sm">
+          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} bg="orange.400" color="white" _hover={{ bg: "orange.500" }} _expanded={{ bg: "orange.500" }} borderRadius="lg" minW="120px" textAlign="center" fontWeight="bold" fontSize="sm">
             {sortMode === "initial" ? "Initial" : "Expanded"}
           </MenuButton>
           <MenuList>
