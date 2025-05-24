@@ -247,10 +247,12 @@ export default function InteractiveDetail({ result, setPage }) {
           </Text>
         </Box>
 
-        <Box flex="1" pr={4}>
-          <Text fontWeight="bold" fontSize="md" color="blue.600" isTruncated>
-            {doc.title || `Document ID: ${item.doc_id}`}
-          </Text>
+        <Box flex="1" pr={4} maxW={800}>
+          <Box overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+            <Text fontWeight="bold" fontSize="md" color="blue.600" isTruncated>
+              {doc.title || `Document ID: ${item.doc_id}`}
+            </Text>
+          </Box>
           {doc.author && (
             <Text fontSize="sm" fontStyle="italic" color="gray.500" mb={1} isTruncated>
               by {doc.author}
