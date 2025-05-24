@@ -19,7 +19,7 @@ export default function App() {
       case "manage":
         return <ManageDocument />;
       case "interactive_result":
-        return <InteractiveDetail result={searchResult} setPage={setPage} />;
+        return <InteractiveDetail setMainNavbar={setMainNavbar} result={searchResult} setPage={setPage} />;
       default:
         return <InteractiveMain 
                   setMainNavbar={setMainNavbar} 

@@ -17,7 +17,7 @@ import {
 import { ChevronDownIcon, ChevronLeftIcon } from "@chakra-ui/icons";
 import { getDocumentById } from "../services/interactive";
 
-export default function InteractiveDetail({ result, setPage }) {
+export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
   const resultData = result || {};
   const initialQueryVector = resultData.initial_query_vector || {};
   const expandedQueryVector = resultData.expanded_query_vector || {};
@@ -323,7 +323,10 @@ export default function InteractiveDetail({ result, setPage }) {
           fontSize="sm"
           fontWeight="normal"
           _hover={{ bg: 'transparent', textDecoration: 'underline' }}
-          onClick={() => setPage("interactive")}
+          onClick={() => {
+            setPage("interactive"); 
+            setMainNavbar(true)
+          }}
           px={2}
         >
           Back to Search
