@@ -24,6 +24,7 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
   const initialResults = resultData.initial_results || [];
   const expandedResults = resultData.expanded_results || [];
 
+  // Collect all words from both initial and expanded vectors
   const allWordsSet = new Set([
     ...Object.keys(initialQueryVector),
     ...Object.keys(expandedQueryVector),
@@ -34,7 +35,8 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
 
   const [paginationPage, setPaginationPage] = useState(1);
   const [sortMode, setSortMode] = useState("expanded");
-  
+
+  // Reset pagination page when sort mode changes
   useEffect(() => {
     setPaginationPage(1);
   }, [sortMode]);
@@ -43,6 +45,7 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
   const pageSize = 10;
   const [docDetails, setDocDetails] = useState({});
 
+  // Merge initial and expanded results into a unified map
   const resultMap = {};
   for (const r of initialResults) {
     resultMap[r.doc_id] = {
@@ -57,6 +60,7 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
     resultMap[r.doc_id].expanded_score = r.score;
   }
 
+  // Sort results based on selected mode (initial or expanded)
   const resultsSorted = Object.values(resultMap).sort((a, b) => {
     const key = sortMode === "initial" ? "initial_rank" : "expanded_rank";
     return (a[key] ?? Infinity) - (b[key] ?? Infinity);
@@ -65,12 +69,14 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
   const totalDocs = resultsSorted.length;
   const pageCount = Math.ceil(totalDocs / pageSize);
 
+  // Scroll to top on page change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
     }
   }, [paginationPage]);
 
+  // Fetch document metadata (title, author, etc) for current page
   useEffect(() => {
     const fetchDetails = async () => {
       const sliced = resultsSorted.slice(
@@ -80,9 +86,9 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
       const promises = sliced.map((item) => getDocumentById(item.doc_id));
       const responses = await Promise.all(promises);
       const detailsMap = {};
-      responses.forEach((res) => {
+      responses.forEach((res, i) => {
         if (res?.data?.id_doc) {
-          detailsMap[res.data.id_doc] = res.data;
+          detailsMap[sliced[i].doc_id] = res.data;
         }
       });
       setDocDetails(detailsMap);
@@ -90,10 +96,10 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
     fetchDetails();
   }, [paginationPage, sortMode]);
 
+  // Pagination component
   const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     const generatePageNumbers = () => {
       const pages = [];
-
       if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) pages.push(i);
       } else {
@@ -102,18 +108,9 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
         } else if (currentPage >= totalPages - 3) {
           pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
         } else {
-          pages.push(
-            1,
-            "...",
-            currentPage - 1,
-            currentPage,
-            currentPage + 1,
-            "...",
-            totalPages
-          );
+          pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
         }
       }
-
       return pages;
     };
 
@@ -121,20 +118,12 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
 
     return (
       <Flex mt={4} justify="center" align="center" gap={1}>
-        <Button
-          size="sm"
-          variant="ghost"
-          isDisabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          ←
-        </Button>
-
+        {/* Previous button */}
+        <Button size="sm" variant="ghost" isDisabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>←</Button>
+        {/* Page numbers */}
         {pageItems.map((p, idx) =>
           p === "..." ? (
-            <Box key={`ellipsis-${idx}`} px={2} py={1} fontSize="sm" color="gray.500">
-              ...
-            </Box>
+            <Box key={`ellipsis-${idx}`} px={2} py={1} fontSize="sm" color="gray.500">...</Box>
           ) : (
             <Button
               key={`page-${p}`}
@@ -150,43 +139,25 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
             </Button>
           )
         )}
-
-        <Button
-          size="sm"
-          variant="ghost"
-          isDisabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          →
-        </Button>
+        {/* Next button */}
+        <Button size="sm" variant="ghost" isDisabled={currentPage === totalPages} onClick={() => onPageChange(currentPage + 1)}>→</Button>
       </Flex>
     );
   };
 
+  // Table header showing words and their weights
   const renderTable = () => (
-    <Flex
-      justify="space-between"
-      align="center"
-      px={4}
-      pb={4}
-      w="100%"
-      borderBottom="1px solid"
-      borderColor="gray.200"
-    >
+    <Flex justify="space-between" align="center" px={4} pb={4} w="100%" borderBottom="1px solid" borderColor="gray.200">
+      {/* Word labels */}
       <VStack spacing={0} align="stretch" justify="center" minW="150px" flexShrink={0}>
         {["Expanded Query", "Initial Weight", "Expanded Weight"].map((label, i) => (
-          <Box
-            key={i}
-            h="40px"
-            display="flex"
-            alignItems="center"
-            justifyContent="flex-start"
-          >
+          <Box key={i} h="40px" display="flex" alignItems="center" justifyContent="flex-start">
             <Text whiteSpace="nowrap" fontWeight="bold" fontSize="md">{label}</Text>
           </Box>
         ))}
       </VStack>
 
+      {/* Word matrix */}
       <Box flex="1" overflowX="auto">
         <Box minW="fit-content">
           <Grid templateColumns={`repeat(${words.length}, auto)`} width="max-content" height="120px">
@@ -209,6 +180,7 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
         </Box>
       </Box>
 
+      {/* Sort menu */}
       <Flex ml={4} direction="column" alignItems="center" gap={2} height="120px" justifyContent="center" flexShrink={0}>
         <Text textAlign="center" fontSize="md">Sort By Rank</Text>
         <Menu>
@@ -224,38 +196,21 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
     </Flex>
   );
 
+  // Render document result card
   const renderCard = (item, index) => {
     const doc = docDetails[item.doc_id] || {};
+    console.log(`docDetails for ${item.doc_id}:`, doc);
     return (
       <Flex key={index} p={4} justify="space-between" align="center" w="full">
-        <Box
-          minW="60px"
-          minH="80px"
-          bg="gray.100"
-          borderRadius="md"
-          mr={4}
-          textAlign="center"
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Text fontSize="sm" fontWeight="bold" color="gray.600">
-            ID
-          </Text>
-          <Text fontSize="md" fontWeight="bold" color="orange.600">
-            {item.doc_id}
-          </Text>
+        {/* Document ID */}
+        <Box minW="60px" minH="80px" bg="gray.100" borderRadius="md" mr={4} textAlign="center" display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+          <Text fontSize="sm" fontWeight="bold" color="gray.600">ID</Text>
+          <Text fontSize="md" fontWeight="bold" color="orange.600">{item.doc_id}</Text>
         </Box>
 
+        {/* Document Metadata */}
         <Box flex="1" pr={4} minW={0}>
-          <Text 
-            fontWeight="bold" 
-            fontSize="md" 
-            color="blue.600" 
-            isTruncated
-            title={doc.title || `Document ID: ${item.doc_id}`}
-          >
+          <Text fontWeight="bold" fontSize="md" color="blue.600" isTruncated title={doc.title || `Document ID: ${item.doc_id}`}>
             {doc.title || `Document ID: ${item.doc_id}`}
           </Text>
           {doc.author && (
@@ -268,13 +223,8 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
           </Text>
         </Box>
 
-        <Grid
-          templateColumns="60px repeat(2, 60px)"
-          templateRows="repeat(3, auto)"
-          gap={2}
-          alignItems="center"
-          justifyItems="center"
-        >
+        {/* Ranking info */}
+        <Grid templateColumns="60px repeat(2, 60px)" templateRows="repeat(3, auto)" gap={2} alignItems="center" justifyItems="center">
           <Box />
           <Text fontWeight="bold" fontSize="sm">Awal</Text>
           <Text fontWeight="bold" fontSize="sm">Akhir</Text>
@@ -289,32 +239,10 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
     );
   };
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      const sliced = resultsSorted.slice(
-        (paginationPage - 1) * pageSize,
-        paginationPage * pageSize
-      );
-      const promises = sliced.map((item) => getDocumentById(item.doc_id));
-      const responses = await Promise.all(promises);
-
-      const detailsMap = {};
-      responses.forEach((res, idx) => {
-        const docData = res?.data;
-        if (docData?.id_doc) {
-          detailsMap[sliced[idx].doc_id] = docData;
-        } else {
-        }
-      });
-
-      setDocDetails(detailsMap);
-    };
-
-    fetchDetails();
-  }, [paginationPage, sortMode]);
-
+  // Main render
   return (
     <VStack spacing={0} align="stretch">
+      {/* Back button */}
       <Box>
         <Button
           leftIcon={<ChevronLeftIcon />}
@@ -325,14 +253,18 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
           _hover={{ bg: 'transparent', textDecoration: 'underline' }}
           onClick={() => {
             setPage("interactive"); 
-            setMainNavbar(true)
+            setMainNavbar(true);
           }}
           px={2}
         >
           Back to Search
         </Button>
       </Box>
+
+      {/* Query analysis table */}
       <Box px={16}>{renderTable()}</Box>
+
+      {/* Results and pagination */}
       <Box ref={scrollRef} maxHeight="calc(100vh - 312px)" overflowY="auto">
         <VStack spacing={0}>
           {resultsSorted
