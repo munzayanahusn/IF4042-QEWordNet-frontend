@@ -25,33 +25,42 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   Button,
-  useDisclosure
+  useDisclosure,
+  Spinner
 } from "@chakra-ui/react";
 
 
 export default function InteractiveMain({ setMainNavbar, setSearchResult, setPage }) {
+  // Query
   const [query, setQuery] = useState('');
+  // Stemming and Stop Word options
   const [stemming, setStemming] = useState(false);
   const [stopWord, setStopWord] = useState(false);
-  const [synset, setSynset] = useState(["lemmas"]);
+  // Synset options
   const [lemmas, setLemmas] = useState(true);
   const [hyponyms, setHyponyms] = useState(false);
   const [hypernyms, setHypernyms] = useState(false);
   const [alsoSees, setAlsoSees] = useState(false);
   const [similarTos, setSimilarTos] = useState(false);
   const [verbGroups, setVerbGroups] = useState(false);
+  // Query Configuration
   const [queryTF, setQueryTF] = useState("raw");
   const [queryIDF, setQueryIDF] = useState(true);
   const [queryNorm, setQueryNorm] = useState(true);
+  // Document Configuration
   const [docTF, setDocTF] = useState("raw");
   const [docIDF, setDocIDF] = useState(true);
   const [docNorm, setDocNorm] = useState(true);
+  // Document Collections
   const [documents, setDocuments] = useState([]);
   const [selectedDC, setSelectedDC] = useState("");
+  // Others
+  const [errorText, setErrorText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
 
-  const fetchDocumentIDs = async () => {
+  const fetchDocuments = async () => {
     try {
       const response = await getDCID();
       if (response.status === 200) {
@@ -61,16 +70,38 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           filename: item.dc_path.split(/[/\\]/).pop().split('_').pop()
         })));
       } else {
-        console.error('Error fetching document IDs:', response.statusText);
+        console.error('Error fetching documents:', response.statusText);
       }
     }
     catch (error) {
-      console.error('Error fetching document IDs:', error);
+      console.error('Error fetching documents:', error);
     }
   };
 
   const search = async () => {
+    if (!query) {
+      setErrorText("Please input a query");
+      onOpen();
+      return;
+    }
+    if (!selectedDC) {
+      setErrorText("Please select a document collection");
+      onOpen();
+      return;
+    }
+    if (isLoading) return;
+
     try {
+      setIsLoading(true);
+
+      let synset = [];
+      if (lemmas) synset.push("lemmas");
+      if (hyponyms) synset.push("hyponyms");
+      if (hypernyms) synset.push("hypernyms");
+      if (alsoSees) synset.push("also_sees");
+      if (similarTos) synset.push("similar_tos");
+      if (verbGroups) synset.push("verb_groups");
+
       let data = {
         dc_id: selectedDC,
         query: query,
@@ -86,53 +117,41 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
       };
       console.log("Search Data:", data);
       const response = await searchDocument(data);
-      // Redirect to interactive_detail
-      setMainNavbar(false);
+
       if (response.status === 200) {
-        console.log('Users fetched successfully:', response.data);
+        console.log('Search results:', response.data);
         setMainNavbar(false);
         setSearchResult(response.data);
         setPage("interactive_result");
       } else {
         onOpen();
-        console.error('Error fetching users:', response.statusText);
+        setErrorText(`Error: ${response.statusText}`);
+        console.error('Error fetching search:', response);
       }
-      // Handle the response data as needed
     } catch (error) {
       onOpen();
-      console.error('Error fetching users:', error);
+      setErrorText(`Error: ${error.message}`);
+      console.error('Error during search:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const formSynset = () => {
-    let synset = [];
-    if (lemmas) synset.push("lemmas");
-    if (hyponyms) synset.push("hyponyms");
-    if (hypernyms) synset.push("hypernyms");
-    if (alsoSees) synset.push("also_sees");
-    if (similarTos) synset.push("similar_tos");
-    if (verbGroups) synset.push("verb_groups");
-    return synset;
-  };
-
   useEffect(() => {
-    fetchDocumentIDs();
+    fetchDocuments();
   }, []);
-  
-  useEffect(() => {
-    setSynset(formSynset());
-  }, [lemmas, hyponyms, hypernyms, alsoSees, similarTos, verbGroups]);
 
 
   return (
     <Box p={6} mb={10}>
-      {/* Logo & Title */}
       <Flex direction="column" align="center" gap={6}>
+        {/* Logo & Title */}
         <Image src={logo1} alt="Logo" height={"56"} mb={5}/>
 
         {/* Search Box */}
         <InputGroup w="2xl">
           <Input
+            isDisabled={isLoading}
             placeholder="Input query"
             borderRadius="full"
             bg="white"
@@ -141,12 +160,14 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
+                e.preventDefault();
                 search();
               }
             }}
           />
           <InputRightElement>
             <IconButton
+              isDisabled={isLoading}
               icon={<Search2Icon />}
               aria-label="Search"
               variant="ghost"
@@ -168,7 +189,6 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           >
             Lemmas
           </Checkbox>
-
           <Checkbox
             isChecked={hyponyms}
             onChange={(e) => setHyponyms(e.target.checked)}
@@ -176,7 +196,6 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           >
             Hyponyms
           </Checkbox>
-
           <Checkbox
             isChecked={hypernyms}
             onChange={(e) => setHypernyms(e.target.checked)}
@@ -184,7 +203,6 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           >
             Hypernyms
           </Checkbox>
-
           <Checkbox
             isChecked={alsoSees}
             onChange={(e) => setAlsoSees(e.target.checked)}
@@ -192,7 +210,6 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           >
             Also Sees
           </Checkbox>
-
           <Checkbox
             isChecked={similarTos}
             onChange={(e) => setSimilarTos(e.target.checked)}
@@ -200,7 +217,6 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           >
             Similar Tos
           </Checkbox>
-
           <Checkbox
             isChecked={verbGroups}
             onChange={(e) => setVerbGroups(e.target.checked)}
@@ -209,7 +225,6 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             Verb Groups
           </Checkbox>
         </HStack>
-
 
         {/* Switches */}
         <HStack mt={6} spacing={8}>
@@ -226,23 +241,24 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
 
           <FormControl display="flex" alignItems="center">
               <FormLabel mb="0" fontSize="sm" whiteSpace="nowrap">
-              Stop Word
+                Stop Word
               </FormLabel>
               <Switch
-              colorScheme="purple"
-              isChecked={stopWord}
-              onChange={() => setStopWord(!stopWord)}
+                colorScheme="purple"
+                isChecked={stopWord}
+                onChange={() => setStopWord(!stopWord)}
               />
           </FormControl>
         </HStack>
 
-        {/* Configuration Section */}
+        {/* Query and document configurations */}
         <VStack mt={10} justify="center" gap={7} wrap="wrap" >
           <Flex justify="flex-end" gap={24} w={"full"} pr={9}>
             <Text fontSize="lg" fontWeight="medium">Query</Text>
             <Text fontSize="lg" fontWeight="medium">Document</Text>
           </Flex>
 
+          {/* Term Frequency */}
           <Flex gap={10} align="center" justify="space-between" width="100%" maxW="600px">
             {/* Left side text */}
             <Text fontSize="lg" fontWeight="medium">
@@ -285,6 +301,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             </HStack>
           </Flex>
           
+          {/* Inverse Document Frequency */}
           <Flex gap={10} align="center" justify="space-between" width="100%" maxW="600px">
             {/* Left side text */}
             <Text fontSize="lg" fontWeight="medium">
@@ -323,7 +340,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             </HStack>
           </Flex>
 
-
+          {/* Normalization */}
           <Flex gap={10} align="center" justify="space-between" width="100%" maxW="600px" mb={5}>
             {/* Left side text */}
             <Text fontSize="lg" fontWeight="medium">
@@ -362,9 +379,8 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             </HStack>
           </Flex>
 
-          {/* Document Collection Selection */}
+          {/* Document collection selection */}
           <Flex gap={10} align="center" justify="space-between" width="100%" maxW="600px">
-            {/* Left side text */}
             <Text fontSize="lg" fontWeight="medium">
               Document
             </Text>
@@ -389,6 +405,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
         </VStack>
       </Flex>
 
+      {/* Error Dialog */}
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
@@ -401,7 +418,7 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              {query === "" ? "Please input a query" : selectedDC === "" ? "Please select a document collection" : "An error occurred while searching"}
+              {errorText}
             </AlertDialogBody>
 
             <AlertDialogFooter>
@@ -412,6 +429,26 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      {/* Loading Spinner */}
+      {isLoading && (
+        <Flex
+          position="fixed"
+          top={0}
+          left={0}
+          w="100vw"
+          h="100vh"
+          bg="rgba(255,255,255,0.7)"
+          justify="center"
+          align="center"
+          zIndex={9999}
+        >
+          <Box textAlign="center">
+            <Spinner size="xl" thickness="4px" color="purple.500" />
+            <Text mt={4} fontWeight="medium" color="gray.700">Searching...</Text>
+          </Box>
+        </Flex>
+      )}
     </Box>
   );
 }

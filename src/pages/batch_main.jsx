@@ -1,6 +1,9 @@
-import React, { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { searchDocumentBatch } from "../services/batch";
 import { getDCID } from "../services/interactive";
+import { FaUpload } from "react-icons/fa";
+import logo1 from "../assets/logo1-new.svg";
+import { Search2Icon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
@@ -11,22 +14,36 @@ import {
   Select,
   Text,
   VStack,
-  HStack,
   useToast,
-  Image
+  Image,
+  Spinner
 } from "@chakra-ui/react";
-import { FaUpload } from "react-icons/fa";
-import logo1 from "../assets/logo1-new.svg";
-import { Search2Icon } from "@chakra-ui/icons";
 
 
-const UploadCard = ({ title, onFileChange, id }) => {
+const UploadCard = ({ id, file, onFileChange, onRemove }) => {
   const inputRef = useRef();
+
+  const handleClick = () => {
+    inputRef.current?.click();
+  };
+
+  const handleInputChange = (e) => {
+    onFileChange(e);
+    // Reset input so the same file can be selected again later
+    e.target.value = null;
+  };
+
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    onRemove();
+    // Reset input manually
+    if (inputRef.current) {
+      inputRef.current.value = null;
+    }
+  };
 
   return (
     <Box
-      as="label"
-      htmlFor={id}
       border="2px dashed orange"
       w="250px"
       h="200px"
@@ -37,26 +54,39 @@ const UploadCard = ({ title, onFileChange, id }) => {
       bg="#fafefe"
       borderRadius="md"
       cursor="pointer"
-      _hover={{ bg: '#fdf8f4' }}
+      _hover={{ bg: "#fdf8f4" }}
+      onClick={handleClick}
     >
-      <HStack>
-        <Icon as={FaUpload} color="orange.400" boxSize={6} />
-        <Text fontWeight="medium" color="orange.500">
-          Upload Files
-        </Text>
-      </HStack>
-      <Text fontSize="sm" mt={2}>
-        Supported formats: Txt
-      </Text>
-
       <Input
         id={id}
         type="file"
-        accept=".txt, .text"
+        accept=".txt,.text"
         display="none"
         ref={inputRef}
-        onChange={onFileChange}
+        onChange={handleInputChange}
       />
+
+      {file ? (
+        <VStack spacing={2} pointerEvents="none">
+          <Text fontWeight="bold" color="teal.800" textAlign="center">{file.name}</Text>
+          <Text fontSize="sm" color="gray.500">(click to change)</Text>
+          <Button
+            size="xs"
+            colorScheme="red"
+            variant="ghost"
+            onClick={handleRemove}
+            pointerEvents="auto"
+          >
+            Remove
+          </Button>
+        </VStack>
+      ) : (
+        <VStack spacing={2}>
+          <Icon as={FaUpload} color="orange.400" boxSize={6} />
+          <Text fontWeight="medium" color="orange.500">Upload Files</Text>
+          <Text fontSize="sm">Supported formats: Txt</Text>
+        </VStack>
+      )}
     </Box>
   );
 };
@@ -69,6 +99,8 @@ export default function BatchMain({ setMainNavbar }) {
   const [outputFileName, setOutputFileName] = useState("");
   const [documents, setDocuments] = useState([]);
   const [selectedDC, setSelectedDC] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
   const toast = useToast();
 
   const fetchDocumentIDs = async () => {
@@ -88,7 +120,7 @@ export default function BatchMain({ setMainNavbar }) {
     }
   };
 
-  const handleSaveClick = async () => {
+  const searchBatch = async () => {
     if (!outputFileName.trim()) {
       toast({
         title: "File name cannot be empty",
@@ -107,6 +139,7 @@ export default function BatchMain({ setMainNavbar }) {
       return;
     }
 
+    setIsLoading(true);
     const formData = new FormData();
     formData.append('dc_id', selectedDC);
     formData.append('queries', queriesFile);
@@ -165,6 +198,8 @@ export default function BatchMain({ setMainNavbar }) {
         isClosable: true,
       });
       console.error("Upload error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -202,15 +237,30 @@ export default function BatchMain({ setMainNavbar }) {
       <Flex gap={8} wrap="wrap" justify="center">
         <VStack>
           <Text fontWeight="semibold">Queries</Text>
-          <UploadCard id="queries-upload" onFileChange={(e) => setQueriesFile(e.target.files[0])} />
+          <UploadCard
+            id="queries-upload"
+            file={queriesFile}
+            onFileChange={(e) => setQueriesFile(e.target.files[0])}
+            onRemove={() => setQueriesFile(null)}
+          />
         </VStack>
         <VStack>
           <Text fontWeight="semibold">Relevant Judgement</Text>
-          <UploadCard id="relevant-upload" onFileChange={(e) => setRelevantFile(e.target.files[0])} />
+          <UploadCard
+            id="relevant-upload"
+            file={relevantFile}
+            onFileChange={(e) => setRelevantFile(e.target.files[0])}
+            onRemove={() => setRelevantFile(null)}
+          />
         </VStack>
         <VStack>
           <Text fontWeight="semibold">Settings</Text>
-          <UploadCard id="settings-upload" onFileChange={(e) => setSettingsFile(e.target.files[0])} />
+          <UploadCard
+            id="settings-upload"
+            file={settingsFile}
+            onFileChange={(e) => setSettingsFile(e.target.files[0])}
+            onRemove={() => setSettingsFile(null)}
+          />
         </VStack>
       </Flex>
 
@@ -218,15 +268,42 @@ export default function BatchMain({ setMainNavbar }) {
         <Text w="220px">Output File Name</Text>
 
         <Input
+          isDisabled={isLoading}
           placeholder="Input file name"
           value={outputFileName}
           onChange={(e) => setOutputFileName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              searchBatch();
+            }
+          }}
         />
-        <Button gap={2} onClick={handleSaveClick} bg="#fbe2c3" shadow="md" p={"1"} w="200px" _hover={{ bg: '#f9d6a0' }}>
+        <Button gap={2} onClick={searchBatch} bg="#fbe2c3" shadow="md" p={"1"} w="200px" _hover={{ bg: '#f9d6a0' }} isDisabled={isLoading}>
           <Search2Icon />
           Search
         </Button>
       </Flex>
+
+      {/* Loading */}
+      {isLoading && (
+        <Flex
+          position="fixed"
+          top={0}
+          left={0}
+          w="100vw"
+          h="100vh"
+          bg="rgba(255,255,255,0.7)"
+          justify="center"
+          align="center"
+          zIndex={9999}
+        >
+          <Box textAlign="center">
+            <Spinner size="xl" thickness="4px" color="purple.500" />
+            <Text mt={4} fontWeight="medium" color="gray.700">Searching...</Text>
+          </Box>
+        </Flex>
+      )}
     </VStack>
   );
 };
