@@ -16,7 +16,9 @@ import {
   VStack,
   useToast,
   Image,
-  Spinner
+  Spinner,
+  InputGroup,
+  InputRightAddon
 } from "@chakra-ui/react";
 
 
@@ -29,14 +31,12 @@ const UploadCard = ({ id, file, onFileChange, onRemove }) => {
 
   const handleInputChange = (e) => {
     onFileChange(e);
-    // Reset input so the same file can be selected again later
     e.target.value = null;
   };
 
   const handleRemove = (e) => {
     e.stopPropagation();
     onRemove();
-    // Reset input manually
     if (inputRef.current) {
       inputRef.current.value = null;
     }
@@ -93,17 +93,19 @@ const UploadCard = ({ id, file, onFileChange, onRemove }) => {
 
 
 export default function BatchMain({ setMainNavbar }) {
+  // Input files
   const [queriesFile, setQueriesFile] = useState(null);
   const [relevantFile, setRelevantFile] = useState(null);
   const [settingsFile, setSettingsFile] = useState(null);
+  // Output file name and documents
   const [outputFileName, setOutputFileName] = useState("");
   const [documents, setDocuments] = useState([]);
   const [selectedDC, setSelectedDC] = useState("");
+  // Others
   const [isLoading, setIsLoading] = useState(false);
-  
   const toast = useToast();
 
-  const fetchDocumentIDs = async () => {
+  const fetchDocuments = async () => {
     try {
       const response = await getDCID();
       if (response.status === 200) {
@@ -111,7 +113,8 @@ export default function BatchMain({ setMainNavbar }) {
         setDocuments(response.data.map(item => ({
           id: item.id,
           filename: item.dc_path.split(/[/\\]/).pop().split('_').pop()
-        })));      } else {
+        })))
+      } else {
         console.error('Error fetching document IDs:', response.statusText);
       }
     }
@@ -131,8 +134,14 @@ export default function BatchMain({ setMainNavbar }) {
     }
 
     if (!queriesFile || !relevantFile || !settingsFile) {
+      let missingFiles = [];
+      if (!queriesFile) missingFiles.push("Queries");
+      if (!relevantFile) missingFiles.push("Relevant Judgement");
+      if (!settingsFile) missingFiles.push("Settings");
+
       toast({
-        title: "All files must be uploaded",
+        title: "Missing File(s)",
+        description: `Please upload: ${missingFiles.join(", ")}`,
         status: "error",
         isClosable: true,
       });
@@ -154,28 +163,19 @@ export default function BatchMain({ setMainNavbar }) {
 
       if (response.status === 200) {
         toast({
-          title: "Files uploaded successfully",
+          title: "Search completed",
+          description: `Results saved as ${outputFileName}.txt`,
           status: "success",
           isClosable: true,
         });
         console.log(response.data);
 
-        // Convert the query results to plain text
-        const textContent = response.data.query_results.map((item, idx) => {
-          return `Query ${idx + 1} (${item.query_id}):\n` +
-                `Initial Query:\n${item.initial_query}\n\n` +
-                `Expanded Query:\n${item.expanded_query}\n\n` +
-                `Initial AP: ${item.initial_ap}\n` +
-                `Expanded AP: ${item.expanded_ap}\n` +
-                `----------------------------------------\n`;
-        }).join('\n');
-
-        // Create a blob and generate a download link
-        const blob = new Blob([textContent], { type: 'text/plain' });
+        const fixedText = response.data.download_content.replace(/\\n/g, '\n');
+        const blob = new Blob([fixedText], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
-        link.download = `${outputFileName || 'output'}.txt`;
+        link.download = `${outputFileName}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -204,7 +204,7 @@ export default function BatchMain({ setMainNavbar }) {
   };
 
   useEffect(() => {
-    fetchDocumentIDs();
+    fetchDocuments();
   }, []);
 
   return (
@@ -264,22 +264,41 @@ export default function BatchMain({ setMainNavbar }) {
         </VStack>
       </Flex>
 
-      <Flex w="100%" maxW="700px" gap={4} justify="center" align="center">
-        <Text w="220px">Output File Name</Text>
+      {/* Seach box */}
+      <Flex w="100%" maxW="800px" gap={4} justify="center" align="center">
+        {/* Left text */}
+        <Text w="auto" whiteSpace="nowrap">
+          Output File
+        </Text>
 
-        <Input
+        {/* Input with .txt on the right side */}
+        <InputGroup maxW="400px" flex="1">
+          <Input
+            isDisabled={isLoading}
+            placeholder="Input file name"
+            value={outputFileName}
+            onChange={(e) => setOutputFileName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                searchBatch();
+              }
+            }}
+          />
+          <InputRightAddon children=".txt" />
+        </InputGroup>
+
+        {/* Search Button */}
+        <Button
+          gap={2}
+          onClick={searchBatch}
+          bg="#fbe2c3"
+          shadow="md"
+          p="1"
+          w="120px"
+          _hover={{ bg: '#f9d6a0' }}
           isDisabled={isLoading}
-          placeholder="Input file name"
-          value={outputFileName}
-          onChange={(e) => setOutputFileName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              searchBatch();
-            }
-          }}
-        />
-        <Button gap={2} onClick={searchBatch} bg="#fbe2c3" shadow="md" p={"1"} w="200px" _hover={{ bg: '#f9d6a0' }} isDisabled={isLoading}>
+        >
           <Search2Icon />
           Search
         </Button>
