@@ -37,7 +37,8 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
   const [stemming, setStemming] = useState(false);
   const [stopWord, setStopWord] = useState(false);
   // Synset options
-  const [lemmas, setLemmas] = useState(true);
+  const [synsets, setSynsets] = useState(true)
+  const [lemmas, setLemmas] = useState(false);
   const [hyponyms, setHyponyms] = useState(false);
   const [hypernyms, setHypernyms] = useState(false);
   const [alsoSees, setAlsoSees] = useState(false);
@@ -95,12 +96,13 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
       setIsLoading(true);
 
       let synset = [];
-      if (lemmas) synset.push("lemmas");
-      if (hyponyms) synset.push("hyponyms");
-      if (hypernyms) synset.push("hypernyms");
-      if (alsoSees) synset.push("also_sees");
-      if (similarTos) synset.push("similar_tos");
-      if (verbGroups) synset.push("verb_groups");
+      if (synsets) synset.push("synset")
+      if (lemmas) synset.push("lemma");
+      if (hyponyms) synset.push("hyponym");
+      if (hypernyms) synset.push("hypernym");
+      if (alsoSees) synset.push("also_see");
+      if (similarTos) synset.push("similar_to");
+      if (verbGroups) synset.push("verb_group");
 
       let data = {
         dc_id: selectedDC,
@@ -183,46 +185,53 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
         {/* Synset Options */}
         <HStack mt={6} spacing={8}>
           <Checkbox
+            isChecked={synsets}
+            onChange={(e) => setSynsets(e.target.checked)}
+            colorScheme="purple"
+          >
+            Synset
+          </Checkbox>
+          <Checkbox
             isChecked={lemmas}
             onChange={(e) => setLemmas(e.target.checked)}
             colorScheme="purple"
           >
-            Lemmas
+            Lemma
           </Checkbox>
           <Checkbox
             isChecked={hyponyms}
             onChange={(e) => setHyponyms(e.target.checked)}
             colorScheme="purple"
           >
-            Hyponyms
+            Hyponym
           </Checkbox>
           <Checkbox
             isChecked={hypernyms}
             onChange={(e) => setHypernyms(e.target.checked)}
             colorScheme="purple"
           >
-            Hypernyms
+            Hypernym
           </Checkbox>
           <Checkbox
             isChecked={alsoSees}
             onChange={(e) => setAlsoSees(e.target.checked)}
             colorScheme="purple"
           >
-            Also Sees
+            Also See
           </Checkbox>
           <Checkbox
             isChecked={similarTos}
             onChange={(e) => setSimilarTos(e.target.checked)}
             colorScheme="purple"
           >
-            Similar Tos
+            Similar To
           </Checkbox>
           <Checkbox
             isChecked={verbGroups}
             onChange={(e) => setVerbGroups(e.target.checked)}
             colorScheme="purple"
           >
-            Verb Groups
+            Verb Group
           </Checkbox>
         </HStack>
 
