@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import {
     useState,    
+    useEffect
 } from 'react';
 import { ChevronLeftIcon, AlertIcon} from "@chakra-ui/icons";
 
@@ -173,8 +174,7 @@ const QueryResultTable = ({title, queries, index}) => (
                 const apVal = query[`${index}_ap`];
                 const formattedAp = typeof apVal === 'number' ? apVal.toFixed(2) : apVal || 'N/A';
                 return (
-                <Tr key={query.query_id} 
-               >
+                <Tr>
                     <Td>{query.query_id}</Td>
                     <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query[`${index}_query`]}</Td>
                     <Td><Box 
@@ -215,7 +215,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
     const displayResult = result || cachedResult;
     
     // Early return if result is undefined or null
-    if (!result) {
+    if (!displayResult) {
         return (
             <Box p={6}>
                 <Button
@@ -258,12 +258,12 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
 
 
     // Check if queries empty
-    const queries = result.query_results?.length ? result.query_results : fallbackData;
+    const queries = displayResult.query_results?.length ? displayResult.query_results : fallbackData;
 
 
     if (error) return <Alert status="error">{error.message || error.toString()}</Alert>;
 
-    console.log(result)
+
     return (
         <Box p={6}>
             <Button
@@ -291,11 +291,11 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                 {/* Initial Query Column */}
                 <Box flex={1}>
                     <MetricCard title="mAP Initial Query"
-                        value={result.map_initial?.toFixed(2) || 'N/A'} />
+                        value={displayResult.map_initial?.toFixed(2) || 'N/A'} />
                     <Box position="relative" pt={4}>
                         <QueryResultTable 
                         title="Initial Query" 
-                        queries={result.query_results.length ? result.query_results : [{query_id: '-', initial_query: 'No data available', initial_ap: 0}]}
+                        queries={queries}
                         index="initial"
                         />
 
@@ -305,10 +305,10 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                 {/* Expanded Query Column */}
                 <Box flex={1}>
                 <MetricCard title="mAP Expanded Query"
-                 value={result.map_expanded?.toFixed(2) || 'N/A'} />
+                 value={displayResult.map_expanded?.toFixed(2) || 'N/A'} />
                 <Box pt={4}>
                     <QueryResultTable 
-                    queries={result.query_results.length ? result.query_results : [{query_id: '-', expanded_query: 'No data available', expanded_ap: 0}]} 
+                    queries={queries} 
                     index="expanded"
                     />
                 </Box>
@@ -330,7 +330,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                     >
                         <MetricCard 
                         title="mAP Initial Query" 
-                        value={result.map_initial?.toFixed(2) || 'N/A'} 
+                        value={displayResult.map_initial?.toFixed(2) || 'N/A'} 
                         />
                     </GridItem>
 
@@ -339,7 +339,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                     >
                         <MetricCard 
                         title="mAP Expanded Query" 
-                        value={result.map_expanded?.toFixed(2) || 'N/A'} 
+                        value={displayResult.map_expanded?.toFixed(2) || 'N/A'} 
                         />
                     </GridItem>
 
@@ -348,7 +348,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                         colSpan={{ base: 1, md: 3 }}  // Spans all columns on desktop
                         mt={4}
                     >
-                        <WideTable queries={result.query_results}/>
+                        <WideTable queries={queries}/>
                     </GridItem>
                     </Grid>
             )}
