@@ -6,7 +6,7 @@ import InteractiveMain from "./pages/interactive_main";
 import BatchMain from "./pages/batch_main";
 import ManageDocument from "./pages/manage_document";
 import InteractiveDetail from "./pages/interactive_detail";
-
+import BatchDetailPage from "./pages/batch_detail";
 export default function App() {
   const [page, setPage] = useState(() => {
     return localStorage.getItem("activePage") || "interactive";
@@ -17,7 +17,9 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case "batch":
-        return <BatchMain setMainNavbar={setMainNavbar} />;
+        return <BatchMain setMainNavbar={setMainNavbar} setPage={setPage} setSearchResult={setSearchResult}/>;
+      case "batch_result":
+        return <BatchDetailPage setMainNavbar={setMainNavbar} setPage={setPage} result={searchResult} />
       case "manage":
         return <ManageDocument />;
       case "interactive_result":

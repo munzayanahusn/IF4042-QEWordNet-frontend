@@ -92,7 +92,7 @@ const UploadCard = ({ id, file, onFileChange, onRemove }) => {
 };
 
 
-export default function BatchMain({ setMainNavbar }) {
+export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
   // Input files
   const [queriesFile, setQueriesFile] = useState(null);
   const [relevantFile, setRelevantFile] = useState(null);
@@ -170,6 +170,8 @@ export default function BatchMain({ setMainNavbar }) {
         });
         console.log(response.data);
 
+
+        // Download Result
         const fixedText = response.data.download_content.replace(/\\n/g, '\n');
         const blob = new Blob([fixedText], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
@@ -180,6 +182,12 @@ export default function BatchMain({ setMainNavbar }) {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        
+        // Redirect to batch_detail
+        console.log("Redirecting to batch_detail")
+        setSearchResult(response.data);
+        setPage("batch_result");
+
       }
       else {
         toast({

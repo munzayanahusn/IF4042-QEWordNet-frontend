@@ -3,29 +3,17 @@ import {
     Flex,
     Grid, 
     Text, 
-    Link, 
     Table, Thead, Tbody, Tr, Th, Td,
     Alert,
     Spinner,
     GridItem,
+    Button,
     useBreakpointValue
 } from "@chakra-ui/react";
 import {
-    useState,
-    useEffect,
-    useRef,
-    
+    useState,    
 } from 'react';
-import { ChevronLeftIcon } from "@chakra-ui/icons";
-import axios from "axios";
-
-const API_URL = "http://localhost:8001";
-
-
-const fetchScoreData = () => {
-
-    return [initialMAP, extendedMAP, iniitial]
-}
+import { ChevronLeftIcon, AlertIcon} from "@chakra-ui/icons";
 
 
 
@@ -57,7 +45,8 @@ const MetricCard = ({title, value}) => (
         </Flex>
     </Box>
 );
-const WideTable = ({query1, query2}) => (
+const WideTable = ({queries}) => {
+    return (
     <Table>
         <Thead>
             <Tr>
@@ -107,11 +96,11 @@ const WideTable = ({query1, query2}) => (
             </Tr>
         </Thead>
         <Tbody>
-            {query1.map((query,index)=>(
+            {queries.map(query=>(
                 <Tr 
                >
-                    <Td>{query.id}</Td>
-                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query.text}</Td>
+                    <Td>{query.query_id}</Td>
+                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query.initial_query}</Td>
                     <Td borderRight={"1px solid"}>
                         <Box 
                         as="span"
@@ -125,12 +114,12 @@ const WideTable = ({query1, query2}) => (
                         minW="40px"
                         textAlign="center"
                         >
-                        {query.AP}
+                        {query.initial_ap.toFixed(2)}
                         </Box>
                     </Td>
                    
-                    <Td borderLeft={"1px solid"}>{query2[index].id}</Td>
-                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query2[index].text}</Td>
+                    <Td borderLeft={"1px solid"}>{query.query_id}</Td>
+                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query.expanded_query}</Td>
 
                     <Td>
                         <Box 
@@ -146,15 +135,15 @@ const WideTable = ({query1, query2}) => (
                         textAlign="center"
                         alignSelf={"start"}
                         >
-                        {query2[index].AP}
+                        {query.expanded_ap.toFixed(2)}
                         </Box>
                         </Td>
                 </Tr>
             ))}
         </Tbody>
     </Table>
-)
-const QueryResultTable = ({title, queries}) => (
+)}
+const QueryResultTable = ({title, queries, index}) => (
     <Table>
         <Thead>
             <Tr>
@@ -180,11 +169,14 @@ const QueryResultTable = ({title, queries}) => (
             </Tr>
         </Thead>
         <Tbody>
-            {queries.map((query,index)=>(
-                <Tr key={query.id} 
+            {queries.map( query=>{
+                const apVal = query[`${index}_ap`];
+                const formattedAp = typeof apVal === 'number' ? apVal.toFixed(2) : apVal || 'N/A';
+                return (
+                <Tr key={query.query_id} 
                >
-                    <Td>{query.id}</Td>
-                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query.text}</Td>
+                    <Td>{query.query_id}</Td>
+                    <Td textAlign={"justify"} whiteSpace={"normal"} wordBreak={"break-word"}>{query[`${index}_query`]}</Td>
                     <Td><Box 
           as="span"
           bg="rgba(244, 140, 6, 0.14)" // Use your color palette
@@ -197,71 +189,99 @@ const QueryResultTable = ({title, queries}) => (
           minW="40px"
           textAlign="center"
         >
-          {query.AP}
+          {formattedAp}
         </Box></Td>
                 </Tr>
-            ))}
+        );})}
         </Tbody>
     </Table>
 )
 
 
-const BatchDetailPage = () => {
-    const [mapData, setMapData] = useState({
-        initial: null,
-        expanded: null
+const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
+    const [cachedResult, setCachedResult] = useState(() => {
+        // Try to load from cache when component mounts
+        const saved = sessionStorage.getItem('batchDetailResult');
+        return saved ? JSON.parse(saved) : null;
     });
-    const [initialQueries, setInitialQueries] = useState([]);
-    const [expandedQueries, setExpandedQueries] = useState([]);
-    const [loading, setLoading] = useState(true);
+    useEffect(() => {
+        if (result) {
+            sessionStorage.setItem('batchDetailResult', JSON.stringify(result));
+            setCachedResult(result);
+        }
+    }, [result]);
+
+    // Use cached result if available when no result is passed
+    const displayResult = result || cachedResult;
+    
+    // Early return if result is undefined or null
+    if (!result) {
+        return (
+            <Box p={6}>
+                <Button
+                    leftIcon={<ChevronLeftIcon />}
+                    variant="ghost"
+                    color="black"
+                    fontSize="sm"
+                    fontWeight="normal"
+                    _hover={{ bg: 'transparent', textDecoration: 'underline' }}
+                    onClick={() => {
+                        setPage("batch"); 
+                        setMainNavbar(true);
+                    }}
+                    px={2}
+                >
+                    Back to Search
+                </Button>
+                <Alert status="warning" mt={4}>
+                    <AlertIcon />
+                    No batch data available. Please select a batch from the main page first.
+                </Alert>
+            </Box>
+        );
+    }
+
+
+
+
     const [error, setError] = useState(null);
     const isWideScreen = useBreakpointValue({ base: false, md: true });
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [mapInit, mapExtended, awal, akhir] = await Promise.all([
-                    axios.get(`${API_URL}/api/map-init`),
-                    axios.get(`${API_URL}/api/map-extended`),
-                    axios.get(`${API_URL}/api/query-awal`),
-                    axios.get(`${API_URL}/api/query-akhir`)
-                ]);
+    // Fallback data in case of empty queries
+    const fallbackData = [{
+        query_id: '-', 
+        initial_query: 'No data available', 
+        expanded_query: 'No data available', 
+        initial_ap: 0, 
+        expanded_ap: 0
+    }];
 
-                setMapData({
-                    initial: mapInit.data?.value || null,
-                    expanded: mapExtended.data?.value || null
-                });
 
-                setInitialQueries(awal.data || []);
-                setExpandedQueries(akhir.data || []);
+    // Check if queries empty
+    const queries = result.query_results?.length ? result.query_results : fallbackData;
 
-            } catch (err) {
-                setError(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-        
-    }, []);
-    
+
     if (error) return <Alert status="error">{error.message || error.toString()}</Alert>;
-    if (loading) {
-    return (
-        <Flex align="center" justify="center" height="60vh">
-        <Spinner size="xl" />
-        </Flex>
-    );
-    }
+
+    console.log(result)
     return (
         <Box p={6}>
-            <Link href="#" display="flex" alignItems="center" mb={6}>
-                <ChevronLeftIcon boxSize={6}/>
-                <Text fontSize="xs">Back to Search</Text>
-            </Link>
+            <Button
+                leftIcon={<ChevronLeftIcon />}
+                variant="ghost"
+                color="black"
+                fontSize="sm"
+                fontWeight="normal"
+                _hover={{ bg: 'transparent', textDecoration: 'underline' }}
+                onClick={() => {
+                setPage("batch"); 
+                setMainNavbar(true);
+                }}
+                px={2}
+            >
+                Back to Search
+            </Button>
             {/* Content Container */}
-            
             {!isWideScreen ? (
             <Flex
                 direction={{ base: "column", md: "row" }}
@@ -270,25 +290,26 @@ const BatchDetailPage = () => {
             >
                 {/* Initial Query Column */}
                 <Box flex={1}>
-                <MetricCard title="mAP Initial Query"
-                    value={mapData.initial?.toFixed(2) || 'N/A'} />
-                <Box position="relative" pt={4}>
-                    <QueryResultTable 
-                    title="Initial Query" 
-                    queries={initialQueries.length ? initialQueries : [{id: '-', text: 'No data available', AP: 0}]}
-                    />
+                    <MetricCard title="mAP Initial Query"
+                        value={result.map_initial?.toFixed(2) || 'N/A'} />
+                    <Box position="relative" pt={4}>
+                        <QueryResultTable 
+                        title="Initial Query" 
+                        queries={result.query_results.length ? result.query_results : [{query_id: '-', initial_query: 'No data available', initial_ap: 0}]}
+                        index="initial"
+                        />
 
-                </Box>
+                    </Box>
                 </Box>
 
                 {/* Expanded Query Column */}
                 <Box flex={1}>
                 <MetricCard title="mAP Expanded Query"
-                 value={mapData.expanded?.toFixed(2) || 'N/A'} />
+                 value={result.map_expanded?.toFixed(2) || 'N/A'} />
                 <Box pt={4}>
                     <QueryResultTable 
-                    title="Expanded Query" 
-                    queries={expandedQueries}
+                    queries={result.query_results.length ? result.query_results : [{query_id: '-', expanded_query: 'No data available', expanded_ap: 0}]} 
+                    index="expanded"
                     />
                 </Box>
                 </Box>
@@ -309,7 +330,7 @@ const BatchDetailPage = () => {
                     >
                         <MetricCard 
                         title="mAP Initial Query" 
-                        value={mapData.initial?.toFixed(2) || 'N/A'} 
+                        value={result.map_initial?.toFixed(2) || 'N/A'} 
                         />
                     </GridItem>
 
@@ -318,7 +339,7 @@ const BatchDetailPage = () => {
                     >
                         <MetricCard 
                         title="mAP Expanded Query" 
-                        value={mapData.expanded?.toFixed(2) || 'N/A'} 
+                        value={result.map_expanded?.toFixed(2) || 'N/A'} 
                         />
                     </GridItem>
 
@@ -327,7 +348,7 @@ const BatchDetailPage = () => {
                         colSpan={{ base: 1, md: 3 }}  // Spans all columns on desktop
                         mt={4}
                     >
-                        <WideTable query1={initialQueries} query2={expandedQueries} />
+                        <WideTable queries={result.query_results}/>
                     </GridItem>
                     </Grid>
             )}
