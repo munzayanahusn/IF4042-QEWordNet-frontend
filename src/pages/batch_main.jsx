@@ -103,7 +103,26 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
   const [selectedDC, setSelectedDC] = useState("");
   // Others
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const toast = useToast();
+
+  const countQueriesInFile = async (file) => {
+    const text = await file.text();
+    const lines = text.trim().split(/\r?\n/);
+    return lines.filter((line) => line.startsWith(".I")).length;
+  };
+
+  const simulateProgress = (estimatedTimeMs) => {
+    let current = 0;
+    const interval = 200;
+    const increment = 100 / (estimatedTimeMs / interval);
+    const timer = setInterval(() => {
+      current += increment;
+      setProgress((prev) => Math.min(current, 98));
+      if (current >= 98) clearInterval(timer);
+    }, interval);
+    return timer;
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -149,6 +168,8 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
     }
 
     setIsLoading(true);
+    setProgress(0);
+
     const formData = new FormData();
     formData.append('dc_id', selectedDC);
     formData.append('queries', queriesFile);
@@ -157,8 +178,15 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
     formData.append('filename', outputFileName);
     formData.append('download', false);
 
+    let timer = null;
+
     try {
       setMainNavbar(false);
+
+      const queryCount = await countQueriesInFile(queriesFile);
+      const estimatedMs = queryCount * 1000;
+      timer = simulateProgress(estimatedMs);
+      
       const response = await searchDocumentBatch(formData);
 
       if (response.status === 200) {
@@ -169,7 +197,6 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
           isClosable: true,
         });
         console.log(response.data);
-
 
         // Download Result
         const fixedText = response.data.download_content.replace(/\\n/g, '\n');
@@ -208,6 +235,8 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
       console.error("Upload error:", error);
     } finally {
       setIsLoading(false);
+      if (timer) clearInterval(timer);
+      setProgress(100);
     }
   };
 
@@ -272,7 +301,7 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
         </VStack>
       </Flex>
 
-      {/* Seach box */}
+      {/* Search box */}
       <Flex w="100%" maxW="800px" gap={4} justify="center" align="center">
         {/* Left text */}
         <Text w="auto" whiteSpace="nowrap">
@@ -312,7 +341,6 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
         </Button>
       </Flex>
 
-      {/* Loading */}
       {isLoading && (
         <Flex
           position="fixed"
@@ -320,14 +348,41 @@ export default function BatchMain({ setMainNavbar, setPage, setSearchResult}) {
           left={0}
           w="100vw"
           h="100vh"
-          bg="rgba(255,255,255,0.7)"
+          bg="rgba(0, 0, 0, 0.9)"
           justify="center"
           align="center"
           zIndex={9999}
         >
           <Box textAlign="center">
             <Spinner size="xl" thickness="4px" color="purple.500" />
-            <Text mt={4} fontWeight="medium" color="gray.700">Searching...</Text>
+            <Text mt={4} fontWeight="semibold" fontSize="xl" color="white">Searching...</Text>
+            <Box mt={4} w="500px">
+              <Box
+                bg="gray.600"
+                h="20px"
+                borderRadius="md"
+                overflow="hidden"
+                position="relative"
+              >
+                <Box
+                  bg="#ec8429"
+                  h="100%"
+                  w={`${progress}%`}
+                  transition="width 0.2s ease"
+                />
+                <Text
+                  position="absolute"
+                  right="10px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  fontSize="xs"
+                  fontWeight="medium"
+                  color="white"
+                >
+                  {Math.floor(progress)}%
+                </Text>
+              </Box>
+            </Box>
           </Box>
         </Flex>
       )}

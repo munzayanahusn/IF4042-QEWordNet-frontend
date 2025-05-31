@@ -447,14 +447,14 @@ export default function InteractiveMain({ setMainNavbar, setSearchResult, setPag
           left={0}
           w="100vw"
           h="100vh"
-          bg="rgba(255,255,255,0.7)"
+          bg="rgba(0, 0, 0, 0.9)"
           justify="center"
           align="center"
           zIndex={9999}
         >
           <Box textAlign="center">
             <Spinner size="xl" thickness="4px" color="purple.500" />
-            <Text mt={4} fontWeight="medium" color="gray.700">Searching...</Text>
+            <Text mt={4} fontWeight="semibold" fontSize="xl" color="white">Searching...</Text>
           </Box>
         </Flex>
       )}
