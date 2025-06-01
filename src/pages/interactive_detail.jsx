@@ -147,32 +147,87 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
 
   // Table header showing words and their weights
   const renderTable = () => (
-    <Flex justify="space-between" align="center" px={4} pb={4} w="100%" borderBottom="1px solid" borderColor="gray.200">
-      {/* Word labels */}
-      <VStack spacing={0} align="stretch" justify="center" minW="150px" flexShrink={0}>
-        {["Expanded Query", "Initial Weight", "Expanded Weight"].map((label, i) => (
-          <Box key={i} h="40px" display="flex" alignItems="center" justifyContent="flex-start">
-            <Text whiteSpace="nowrap" fontWeight="bold" fontSize="md">{label}</Text>
-          </Box>
-        ))}
+    <Flex justify="space-between" align="flex-start" px={4} pb={4} w="100%" borderBottom="1px solid" borderColor="gray.200">
+      <VStack spacing={0} align="stretch" justify="start" minW="150px" flexShrink={0}>
+        <Box h="28px" display="flex" alignItems="center" justifyContent="space-between" pr={1}>
+          <Text fontSize="sm" fontWeight="semibold" color="orange.600">Initial Query</Text>
+          <Text fontSize="sm" fontWeight="bold" color="orange.600">:</Text>
+        </Box>
+        <Box h="28px" display="flex" alignItems="center" justifyContent="space-between" pr={1} pb={4}>
+          <Text fontSize="sm" fontWeight="semibold" color="blue.600">Expanded Query</Text>
+          <Text fontSize="sm" fontWeight="bold" color="blue.600">:</Text>
+        </Box>
+        <Box h="40px" display="flex" alignItems="center" justifyContent="flex-start">
+          <Text fontWeight="bold" fontSize="md">Term</Text>
+        </Box>
+        <Box h="40px" display="flex" alignItems="center" justifyContent="flex-start">
+          <Text fontWeight="bold" fontSize="md">Initial Weight</Text>
+        </Box>
+        <Box h="40px" display="flex" alignItems="center" justifyContent="flex-start">
+          <Text fontWeight="bold" fontSize="md">Expanded Weight</Text>
+        </Box>
       </VStack>
 
-      {/* Word matrix */}
       <Box flex="1" overflowX="auto">
         <Box minW="fit-content">
-          <Grid templateColumns={`repeat(${words.length}, auto)`} width="max-content" height="120px">
+          <Grid templateColumns={`repeat(${words.length}, auto)`} width="max-content">
+            <GridItem colSpan={words.length} h="28px" px={2} display="flex" alignItems="center">
+              <Text fontSize="xs" color="gray.700" wordBreak="break-word" wordSpacing="2px">
+                {words.map(word => initialQueryVector[word] != null ? word : null).filter(Boolean).join(" ")}
+              </Text>
+            </GridItem>
+
+            <GridItem colSpan={words.length} h="28px" px={2} pb={4} display="flex" alignItems="center">
+              <Text fontSize="xs" color="gray.700" wordBreak="break-word" wordSpacing="2px">
+                {words.map(word => expandedQueryVector[word] != null ? word : null).filter(Boolean).join(" ")}
+              </Text>
+            </GridItem>
+            {/* Row: Term */}
             {words.map((word, i) => (
-              <GridItem key={`word-${i}`} border="1px solid" borderColor="gray.300" h="40px" px={2} display="flex" alignItems="center" justifyContent="center">
-                <Text whiteSpace="nowrap" fontSize="xs">{word}</Text>
+              <GridItem
+                key={`term-${i}`}
+                border="1px solid"
+                borderColor="gray.300"
+                h="40px"
+                px={2}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="xs"
+                fontWeight="semibold"
+              >
+                {word}
               </GridItem>
             ))}
+            {/* Row: Initial Weight */}
             {initialWeights.map((w, i) => (
-              <GridItem key={`iw-${i}`} border="1px solid" borderColor="gray.300" h="40px" px={2} display="flex" alignItems="center" justifyContent="center" fontSize="xs">
+              <GridItem
+                key={`iw-${i}`}
+                border="1px solid"
+                borderColor="gray.300"
+                h="40px"
+                px={2}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="xs"
+              >
                 {w.toFixed(3)}
               </GridItem>
             ))}
+            {/* Row: Expanded Weight */}
             {expandedWeights.map((w, i) => (
-              <GridItem key={`ew-${i}`} border="1px solid" borderColor="gray.300" h="40px" px={2} display="flex" alignItems="center" justifyContent="center" fontSize="xs">
+              <GridItem
+                key={`ew-${i}`}
+                border="1px solid"
+                borderColor="gray.300"
+                h="40px"
+                px={2}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="xs"
+              >
                 {w.toFixed(3)}
               </GridItem>
             ))}
@@ -181,7 +236,7 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
       </Box>
 
       {/* Sort menu */}
-      <Flex ml={4} direction="column" alignItems="center" gap={2} height="120px" justifyContent="center" flexShrink={0}>
+      <Flex ml={4} direction="column" alignItems="center" gap={2} height="200px" justifyContent="center" flexShrink={0}>
         <Text textAlign="center" fontSize="md">Sort By Rank</Text>
         <Menu>
           <MenuButton as={Button} rightIcon={<ChevronDownIcon />} bg="orange.400" color="white" _hover={{ bg: "orange.500" }} _expanded={{ bg: "orange.500" }} borderRadius="lg" minW="120px" textAlign="center" fontWeight="bold" fontSize="sm">
