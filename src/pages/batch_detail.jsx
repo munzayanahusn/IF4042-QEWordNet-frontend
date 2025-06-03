@@ -261,6 +261,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                 </Alert>
             </Box>
         );
+        setPage("batch");
     }
 
 
