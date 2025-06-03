@@ -95,7 +95,7 @@ const WideTable = ({queries}) => {
                     minW="40px"
                     textAlign="center"
                 >
-                    {query.initial_ap.toFixed(2)}
+                    {query.initial_ap.toFixed(4)}
                 </Box>
                 </Td>
                 <Td borderLeft={"1px solid"}>{query.query_id}</Td>
@@ -131,7 +131,7 @@ const WideTable = ({queries}) => {
                     minW="40px"
                     textAlign="center"
                 >
-                    {query.expanded_ap.toFixed(2)}
+                    {query.expanded_ap.toFixed(4)}
                 </Box>
                 </Td>
             </Tr>
@@ -170,7 +170,7 @@ const QueryResultTable = ({title, queries, index}) => (
         <Tbody>
             {queries.map(query => {
             const apVal = query[`${index}_ap`];
-            const formattedAp = typeof apVal === 'number' ? apVal.toFixed(2) : apVal || 'N/A';
+            const formattedAp = typeof apVal === 'number' ? apVal.toFixed(4) : apVal || 'N/A';
             
             return (
                 <Tr key={query.query_id}>
@@ -323,7 +323,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                 {/* Initial Query Column */}
                 <Box flex={1}>
                     <MetricCard title="MAP Initial Query"
-                        value={displayResult.map_initial?.toFixed(2) || 'N/A'} />
+                        value={displayResult.map_initial?.toFixed(4) || 'N/A'} />
                     <Box position="relative" pt={4}>
                         <QueryResultTable 
                         title="Initial Query" 
@@ -337,7 +337,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                 {/* Expanded Query Column */}
                 <Box flex={1}>
                 <MetricCard title="MAP Expanded Query"
-                 value={displayResult.map_expanded?.toFixed(2) || 'N/A'} />
+                 value={displayResult.map_expanded?.toFixed(4) || 'N/A'} />
                 <Box pt={4}>
                     <QueryResultTable 
                     title="Expanded Query" 
@@ -364,7 +364,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                     >
                         <MetricCard 
                         title="MAP Initial Query" 
-                        value={displayResult.map_initial?.toFixed(2) || 'N/A'} 
+                        value={displayResult.map_initial?.toFixed(4) || 'N/A'} 
                         />
                     </GridItem>
 
@@ -373,7 +373,7 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
                     >
                         <MetricCard 
                         title="MAP Expanded Query" 
-                        value={displayResult.map_expanded?.toFixed(2) || 'N/A'} 
+                        value={displayResult.map_expanded?.toFixed(4) || 'N/A'} 
                         />
                     </GridItem>
 
