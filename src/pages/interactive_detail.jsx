@@ -41,6 +41,13 @@ export default function InteractiveDetail({ setMainNavbar, result, setPage }) {
     setPaginationPage(1);
   }, [sortMode]);
 
+  useEffect(() => {
+    if (!result || Object.keys(result).length === 0) {
+      setPage("interactive");
+      setMainNavbar(true);
+    }
+  }, [result, setPage, setMainNavbar]);
+
   const scrollRef = useRef(null);
   const pageSize = 10;
   const [docDetails, setDocDetails] = useState({});
