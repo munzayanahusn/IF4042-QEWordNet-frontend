@@ -243,34 +243,34 @@ const BatchDetailPage = ({setMainNavbar, setPage, result}) => {
         }
     }, [result, setMainNavbar, setPage]);
     // // Early return if result is undefined or null
-    // if (!displayResult) {
-    //     return (
-    //         <Box p={6}>
-    //             <Button
-    //                 leftIcon={<ChevronLeftIcon />}
-    //                 variant="ghost"
-    //                 color="black"
-    //                 fontSize="sm"
-    //                 fontWeight="normal"
-    //                 _hover={{ bg: 'transparent', textDecoration: 'underline' }}
-    //                 onClick={() => {
+    if (!displayResult) {
+        return (
+            <Box p={6}>
+                <Button
+                    leftIcon={<ChevronLeftIcon />}
+                    variant="ghost"
+                    color="black"
+                    fontSize="sm"
+                    fontWeight="normal"
+                    _hover={{ bg: 'transparent', textDecoration: 'underline' }}
+                    onClick={() => {
                         
-    //                     setPage("batch"); 
-    //                     setMainNavbar(true);
-    //                 }}
-    //                 px={2}
-    //             >
-    //                 Back to Search
-    //             </Button>
-    //             <Alert status="warning" mt={4}>
-    //                 <AlertIcon />
-    //                 No batch data available. Please select a batch from the main page first.
-    //             </Alert>
-    //         </Box>
+                        setPage("batch"); 
+                        setMainNavbar(true);
+                    }}
+                    px={2}
+                >
+                    Back to Search
+                </Button>
+                <Alert status="warning" mt={4}>
+                    <AlertIcon />
+                    No batch data available. Please select a batch from the main page first.
+                </Alert>
+            </Box>
             
-    //     );
+        );
         
-    // }
+    }
    
 
 
